@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>商务助理 AI 智能问答平台 · V2</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{
+    --primary:#204eff; --primary-soft:#e9eeff; --primary-deep:#1a3fd0;
+    --ink:#1f2733; --ink2:#475569; --ink3:#94a3b8;
+    --line:#e8eaed; --line2:#f1f3f6; --bg:#f5f6f8; --white:#fff;
+    --ok:#16a34a; --warn:#d97706; --err:#dc2626; --mute:#94a3b8;
+    --radius:12px; --radius-sm:8px;
+  }
+  body{ font-family:"Microsoft YaHei","PingFang SC",-apple-system,"Segoe UI",sans-serif;
+    color:var(--ink); background:var(--bg); height:100vh; overflow:hidden; font-size:14px; }
+  .app{ display:flex; height:100vh; }
+
+  /* sidebar */
+  .sidebar{ width:216px; flex-shrink:0; background:linear-gradient(180deg,#0f172a 0%,#1e293b 100%);
+    color:#cbd5e1; display:flex; flex-direction:column; }
+  .brand{ padding:18px 20px; display:flex; align-items:center; gap:10px; border-bottom:1px solid rgba(255,255,255,.07); }
+  .brand-logo{ width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#3b82f6,#2563eb);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px; }
+  .brand-name{ font-size:15px;font-weight:700;color:#fff;line-height:1.1; }
+  .brand-sub{ font-size:11px;color:#64748b; }
+  .nav{ padding:12px 10px; flex:1; }
+  .nav-item{ display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;
+    color:#94a3b8;font-size:13.5px;margin-bottom:3px; transition:.15s; }
+  .nav-item:hover{ background:rgba(255,255,255,.05);color:#e2e8f0; }
+  .nav-item.active{ background:var(--primary);color:#fff;font-weight:600; }
+  .nav-item .ic{ width:16px;text-align:center; }
+  .nav-badge{ font-size:10px;background:rgba(255,255,255,.12);padding:1px 6px;border-radius:10px;margin-left:auto; }
+  .sidebar-foot{ padding:14px 16px;border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:10px; }
+  .avatar{ width:32px;height:32px;border-radius:50%;background:#334155;display:flex;align-items:center;justify-content:center;color:#e2e8f0;font-size:13px;font-weight:600; }
+  .sf-name{ font-size:13px;color:#e2e8f0;font-weight:600; } .sf-role{ font-size:11px;color:#64748b; }
+
+  /* main */
+  .main{ flex:1; display:flex; flex-direction:column; min-width:0; }
+  .topbar{ height:54px;flex-shrink:0;background:#fff;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;padding:0 20px;gap:16px; }
+  .top-title{ font-size:15px;font-weight:700;color:var(--ink); }
+  .top-spacer{ flex:1; }
+  .seg{ display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink2); }
+  .seg label{ color:var(--ink3);font-size:12px; }
+  select.ctl,.ctl{ height:32px;border:1px solid var(--line);border-radius:7px;padding:0 28px 0 10px;font-size:13px;
+    color:var(--ink);background:#fff;outline:none;cursor:pointer;font-family:inherit;
+    appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 9px center; }
+  select.ctl:focus{ border-color:var(--primary); }
+  .role-pill{ display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden; }
+  .role-pill button{ border:none;background:#fff;padding:6px 12px;font-size:12.5px;cursor:pointer;color:var(--ink2);font-family:inherit; }
+  .role-pill button.on{ background:var(--primary);color:#fff;font-weight:600; }
+  .content{ flex:1; overflow-y:auto; padding:20px 24px; }
+
+  /* generic */
+  .page{ display:none; } .page.show{ display:block; }
+  .row{ display:flex;align-items:center;gap:10px; } .wrap{ flex-wrap:wrap; }
+  .toolbar{ display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap; }
+  .toolbar .spacer{ flex:1; }
+  .search{ position:relative; } .search input{ height:34px;width:230px;border:1px solid var(--line);border-radius:8px;padding:0 12px 0 32px;font-size:13px;outline:none;font-family:inherit; }
+  .search input:focus{ border-color:var(--primary); } .search .si{ position:absolute;left:10px;top:9px;color:var(--ink3); }
+  .btn{ height:34px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:0 14px;font-size:13px;cursor:pointer;color:var(--ink2);font-family:inherit;display:inline-flex;align-items:center;gap:6px; }
+  .btn:hover{ border-color:#cbd5e1; }
+  .btn.primary{ background:var(--primary);color:#fff;border-color:var(--primary); } .btn.primary:hover{ background:var(--primary-deep); }
+  .btn.danger{ background:var(--err);color:#fff;border-color:var(--err); } .btn.danger:hover{ background:#b91c1c;border-color:#b91c1c; }
+  .btn.success{ background:var(--ok);color:#fff;border-color:var(--ok); } .btn.success:hover{ background:#15803d;border-color:#15803d; }
+  .btn.sm{ height:28px;padding:0 10px;font-size:12px; }
+  .count{ font-size:13px;color:var(--ink3); }
+  .crumb{ font-size:13px;color:var(--ink3);margin-bottom:10px;cursor:default; } .crumb a{ color:var(--primary);cursor:pointer;text-decoration:none; }
+
+  /* cards grid */
+  .grid{ display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px; }
+  .card{ background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px;cursor:pointer;transition:.15s; }
+  .card:hover{ box-shadow:0 6px 18px rgba(20,40,90,.07);border-color:#dbe0e8;transform:translateY(-1px); }
+  .card-head{ display:flex;gap:11px;align-items:flex-start;margin-bottom:12px; }
+  .card-ic{ width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0; }
+  .ic-blue{ background:#e6efff; } .ic-green{ background:#e7f7ee; } .ic-amber{ background:#fdf0dd; } .ic-purple{ background:#efe9fb; }
+  .card-title{ font-size:15px;font-weight:700;color:var(--ink);line-height:1.3; }
+  .card-desc{ font-size:12px;color:var(--ink3);line-height:1.5;margin-top:3px; }
+  .tags{ display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px; }
+  .tag{ font-size:11px;padding:2px 8px;border-radius:5px;font-weight:500; }
+  .tag-sys{ background:#eef2ff;color:#4338ca; } .tag-user{ background:#ecfdf5;color:#047857; }
+  .tag-type{ background:#f1f5f9;color:#475569; } .tag-faq{ background:#fff1f2;color:#be123c; }
+  .card-foot{ display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--line2);padding-top:10px;font-size:12px;color:var(--ink3); }
+  .meta{ display:inline-flex;align-items:center;gap:4px; } .meta b{ color:var(--ink2);font-weight:600; }
+  .dot{ width:7px;height:7px;border-radius:50%;display:inline-block; }
+  .d-ok{ background:var(--ok); } .d-warn{ background:var(--warn); } .d-err{ background:var(--err); } .d-mute{ background:var(--mute); }
+  .qual{ font-weight:700; } .q-hi{ color:var(--ok); } .q-mid{ color:var(--warn); } .q-lo{ color:var(--err); }
+  .card.dashed{ border:1.5px dashed #cbd5e1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink3);min-height:130px;background:#fcfcfd; }
+  .card.dashed .plus{ font-size:26px;font-weight:300;color:var(--primary); }
+
+  /* stat cards */
+  .stats{ display:flex;gap:12px;margin:14px 0 18px; }
+  .stat{ background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 18px;min-width:120px; }
+  .stat .v{ font-size:24px;font-weight:700;color:var(--ink); } .stat .l{ font-size:12px;color:var(--ink3);margin-top:2px; }
+
+  /* detail header */
+  .dhead{ display:flex;align-items:center;gap:12px;margin-bottom:4px; }
+  .dhead .di{ width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:21px; }
+  .dhead h2{ font-size:18px;color:var(--ink); } .dhead .ds{ font-size:12.5px;color:var(--ink3);margin-top:2px; }
+
+  /* tabs */
+  .tabs{ display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px; }
+  .tab{ padding:8px 14px;font-size:13.5px;color:var(--ink2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px; }
+  .tab.on{ color:var(--primary);border-bottom-color:var(--primary);font-weight:600; }
+
+  /* doc/chunk/faq list */
+  .chunk{ background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-bottom:10px; }
+  .chunk-h{ display:flex;align-items:center;justify-content:space-between;margin-bottom:7px; }
+  .chunk-n{ font-size:12.5px;font-weight:700;color:var(--ink2); }
+  .qbar{ width:120px;height:6px;background:#eef1f5;border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle; }
+  .qfill{ height:100%;border-radius:3px; } .qf-hi{ background:var(--ok); } .qf-mid{ background:var(--warn); } .qf-lo{ background:var(--err); }
+  .chunk-t{ font-size:13px;color:var(--ink2);line-height:1.7; }
+  .faq-q{ font-size:14px;font-weight:600;color:var(--ink);display:flex;gap:8px;line-height:1.6; }
+  .faq-a{ font-size:13px;color:var(--ink2);display:flex;gap:8px;line-height:1.7;margin-top:6px; }
+  .faq-ql{ color:var(--primary);font-weight:700; } .faq-al{ color:var(--ok);font-weight:700; }
+  .conflict{ font-size:11px;background:#fff1f2;color:#be123c;padding:2px 8px;border-radius:5px;margin-left:auto; }
+
+  /* split layout (doc detail / effect) */
+  .split{ display:flex;gap:16px;align-items:flex-start; }
+  .split .left{ flex:1;min-width:0; }
+  .panel{ width:380px;flex-shrink:0;background:#fff;border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;height:calc(100vh - 150px); }
+  .panel-h{ padding:13px 16px;border-bottom:1px solid var(--line); }
+  .panel-h .pt{ font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:space-between; }
+  .panel-h .ps{ font-size:11.5px;color:var(--ink3);margin-top:3px; }
+  .chat{ flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:12px; }
+  .info-banner{ background:#f0f6ff;border:1px solid #d6e4ff;border-radius:8px;padding:10px 12px;font-size:12.5px;color:#1e40af;line-height:1.6; }
+  .chip{ background:#f1f5f9;border:1px solid var(--line);border-radius:16px;padding:6px 12px;font-size:12px;color:var(--ink2);cursor:pointer;display:inline-block;margin:3px 4px 0 0; }
+  .chip:hover{ border-color:var(--primary);color:var(--primary); }
+  .bubble{ max-width:90%;padding:9px 12px;border-radius:10px;font-size:13px;line-height:1.6; }
+  .b-user{ align-self:flex-end;background:var(--primary);color:#fff;border-bottom-right-radius:3px; }
+  .b-bot{ align-self:flex-start;background:#f1f5f9;color:var(--ink);border-bottom-left-radius:3px; }
+  .panel-foot{ border-top:1px solid var(--line);padding:10px 12px; }
+  .panel-foot textarea{ width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;resize:none;outline:none;font-family:inherit;height:40px; }
+  .panel-foot textarea:focus{ border-color:var(--primary); }
+  .ffield{ display:flex;gap:8px;margin-bottom:8px; } .ffield .ctl{ flex:1; } .ffield input.ctl{ background-image:none;padding:0 10px; }
+
+  /* effect feed */
+  .feed{ display:flex;flex-direction:column;gap:10px; }
+  .fcard{ background:#fff;border:1px solid var(--line);border-radius:11px;padding:13px 15px; }
+  .fc-top{ display:flex;align-items:center;gap:7px;margin-bottom:8px;flex-wrap:wrap; }
+  .gtag{ font-size:11px;font-family:Consolas,monospace;background:#eef2ff;color:#4338ca;padding:1px 7px;border-radius:5px; }
+  .btag{ font-size:11px;background:#f1f5f9;color:#475569;padding:1px 7px;border-radius:5px; }
+  .ftime{ font-size:11.5px;color:var(--ink3);margin-left:auto; }
+  .qa-q{ font-size:13px;color:var(--ink);font-weight:600;line-height:1.6;display:flex;gap:6px; }
+  .qa-a{ font-size:13px;color:var(--ink2);line-height:1.7;display:flex;gap:6px;margin-top:5px; }
+  .qa-l{ font-weight:700;flex-shrink:0; } .ql-u{ color:var(--primary); } .ql-b{ color:#64748b; }
+  .slot{ margin:6px 0 0 14px;padding-left:10px;border-left:2px solid #e2e8f0; }
+  .slot .qa-q,.slot .qa-a{ font-size:12.5px; }
+  .status-bar{ display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px; }
+  .st{ font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:6px; }
+  .st-ok{ background:#ecfdf5;color:#047857; } .st-miss{ background:#fff1f2;color:#be123c; } .st-silent{ background:#f1f5f9;color:#64748b; }
+  .wtag{ font-size:11.5px;background:#eef2ff;color:#3730a3;padding:2px 9px;border-radius:6px;cursor:pointer;user-select:none; }
+  .wtag:hover{ background:#e0e7ff; } .wtag .ar{ font-size:9px; }
+  .wtag.fill{ background:#fef3c7;color:#92400e;cursor:default; }
+  .wtag.cache{ background:#e7f7ee;color:#047857;cursor:default; } .wtag.faq{ background:#fff1f2;color:#be123c;cursor:default; }
+  .trace-btn{ font-size:11.5px;color:var(--primary);cursor:pointer;display:inline-flex;align-items:center;gap:4px; }
+  .wexpand{ margin-top:9px;background:#f8fafc;border:1px solid var(--line2);border-radius:8px;padding:10px 12px;font-size:12.5px;color:var(--ink2);display:none; }
+  .wexpand.show{ display:block; }
+  .wexpand .ch{ padding:6px 0;border-bottom:1px dashed #e8eaed;line-height:1.6; } .wexpand .ch:last-child{ border:none; }
+  .wexpand .src{ color:var(--ink3);font-size:11.5px; } .wexpand .sc{ color:var(--primary);font-weight:600; }
+  .silent-log{ font-size:12px;color:#64748b;background:#f1f5f9;border-radius:7px;padding:7px 10px;margin-top:7px;display:flex;align-items:center;gap:7px; }
+
+  /* dashboard */
+  .kpis{ display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px; }
+  .kpi{ background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px; }
+  .kpi .kl{ font-size:12.5px;color:var(--ink3); } .kpi .kv{ font-size:30px;font-weight:700;margin-top:5px; }
+  .kpi .kd{ font-size:11.5px;margin-top:3px; } .up{ color:var(--ok); } .down{ color:var(--err); }
+  .board-card{ background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px; }
+  .board-card h3{ font-size:14px;margin-bottom:12px;color:var(--ink); }
+  .bad{ display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line2);font-size:13px; }
+  .bad:last-child{ border:none; } .bad .bq{ flex:1;color:var(--ink2); } .bad .bmeta{ font-size:11.5px;color:var(--ink3); }
+  .note{ font-size:12px;color:var(--ink3);background:#f8fafc;border:1px dashed var(--line);border-radius:8px;padding:9px 12px;margin-top:10px; }
+
+  /* modal */
+  .mask{ position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:50; }
+  .mask.show{ display:flex; }
+  .modal{ background:#fff;border-radius:14px;width:560px;max-width:92vw;max-height:88vh;overflow:hidden;display:flex;flex-direction:column; }
+  .modal.wide{ width:820px; }
+  .modal-h{ padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between; }
+  .modal-h .mt{ font-size:15px;font-weight:700; } .modal-x{ cursor:pointer;color:var(--ink3);font-size:20px;line-height:1; }
+  .modal-b{ padding:20px;overflow-y:auto; } .modal-f{ padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px; }
+  .field{ margin-bottom:16px; } .field label{ display:block;font-size:13px;font-weight:600;margin-bottom:6px; } .field .req{ color:var(--err); }
+  .field input,.field textarea{ width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:13.5px;outline:none;font-family:inherit; }
+  .field input:focus,.field textarea:focus{ border-color:var(--primary); }
+  .field input:disabled,.field textarea:disabled{ background:#f5f6f8;color:var(--ink3);cursor:not-allowed; }
+  .hint{ font-size:11.5px;color:var(--ink3);margin-top:5px; }
+
+  /* wizard */
+  .steps{ display:flex;align-items:center;padding:4px 0 18px; }
+  .step{ display:flex;align-items:center;gap:8px;color:var(--ink3);font-size:13px; }
+  .step .sn{ width:24px;height:24px;border-radius:50%;background:#eef1f5;color:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700; }
+  .step.on{ color:var(--primary);font-weight:600; } .step.on .sn{ background:var(--primary);color:#fff; }
+  .step.done .sn{ background:var(--ok);color:#fff; } .step.done{ color:var(--ok); }
+  .step-line{ flex:1;height:2px;background:#eef1f5;margin:0 8px; } .step-line.done{ background:var(--ok); }
+  .opt{ border:1.5px solid var(--line);border-radius:10px;padding:13px 15px;margin-bottom:10px;cursor:pointer; }
+  .opt.on{ border-color:var(--primary);background:#f5f8ff; }
+  .opt .on-row{ display:flex;align-items:center;gap:9px; } .opt .radio{ width:16px;height:16px;border:2px solid #cbd5e1;border-radius:50%;flex-shrink:0; }
+  .opt.on .radio{ border-color:var(--primary);background:radial-gradient(circle,#fff 30%,var(--primary) 32%); }
+  .opt .oname{ font-size:14px;font-weight:600; } .opt .odesc{ font-size:12px;color:var(--ink3);margin-top:5px;margin-left:25px; }
+  .checks{ margin:8px 0 0 25px;display:flex;gap:16px;flex-wrap:wrap; } .checks label{ font-size:12.5px;color:var(--ink2);display:flex;align-items:center;gap:5px;cursor:pointer; }
+  .drop{ border:1.5px dashed #cbd5e1;border-radius:10px;padding:30px;text-align:center;color:var(--ink3);background:#fcfcfd;cursor:pointer; }
+  .drop:hover{ border-color:var(--primary);color:var(--primary); } .drop .dt{ font-size:14px;font-weight:600;margin-bottom:4px;color:var(--ink2); }
+  .fileitem{ display:flex;align-items:center;gap:8px;margin-top:12px;background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:13px; }
+  .fileitem .rm{ margin-left:auto;color:var(--err);cursor:pointer;font-size:12px; }
+  .ssect{ font-size:13px;font-weight:700;margin:6px 0 10px;color:var(--ink); }
+  .prev3{ display:grid;grid-template-columns:150px 1fr 1fr;gap:12px;height:340px; }
+  .prevcol{ border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;overflow:hidden; }
+  .prevcol .ph{ padding:8px 10px;font-size:12px;font-weight:600;background:#f8fafc;border-bottom:1px solid var(--line);color:var(--ink2); }
+  .prevcol .pbody{ padding:10px;overflow-y:auto;font-size:12px;line-height:1.7;color:var(--ink2); }
+  .docpill{ padding:7px 9px;border-radius:6px;background:#f1f5f9;font-size:12px;margin-bottom:6px; }
+  .progress{ height:8px;background:#eef1f5;border-radius:4px;overflow:hidden;margin-top:10px; } .progress .pf{ height:100%;background:var(--primary);border-radius:4px;transition:.4s; }
+
+  /* trace drawer */
+  .drawer-mask{ position:fixed;inset:0;background:rgba(15,23,42,.35);display:none;z-index:60; } .drawer-mask.show{ display:block; }
+  .drawer{ position:fixed;top:0;right:-560px;width:540px;max-width:92vw;height:100vh;background:#fff;box-shadow:-8px 0 30px rgba(0,0,0,.12);
+    z-index:61;transition:right .25s;display:flex;flex-direction:column; } .drawer.show{ right:0; }
+  .drawer-h{ padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between; }
+  .drawer-h .dt{ font-size:15px;font-weight:700; } .drawer-meta{ font-size:12px;color:var(--ink3);margin-top:3px; }
+  .drawer-b{ padding:18px 20px;overflow-y:auto;flex:1; }
+  .tstep{ position:relative;padding:0 0 16px 26px;border-left:2px solid #e8eaed;margin-left:6px; }
+  .tstep:last-child{ border-left-color:transparent; }
+  .tstep .tdot{ position:absolute;left:-7px;top:1px;width:12px;height:12px;border-radius:50%;background:var(--primary);border:2px solid #fff; }
+  .tstep .tname{ font-size:13px;font-weight:700;color:var(--ink); } .tstep .tname .lat{ font-weight:400;color:var(--ink3);font-size:11.5px;margin-left:6px; }
+  .tstep .tbody{ font-size:12.5px;color:var(--ink2);line-height:1.7;margin-top:3px; }
+  .tsub{ margin-top:5px;padding:7px 10px;background:#f8fafc;border-radius:7px;font-size:12px;color:var(--ink2);line-height:1.7; }
+  .tsub .wn{ font-weight:600;color:var(--ink); } .tmcp{ font-family:Consolas,monospace;font-size:11.5px;color:#4338ca; }
+
+  /* toast */
+  .toast{ position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:#1f2733;color:#fff;
+    padding:11px 20px;border-radius:9px;font-size:13px;opacity:0;transition:.25s;z-index:90;pointer-events:none; }
+  .toast.show{ opacity:1;transform:translateX(-50%) translateY(0); }
+  .hide{ display:none !important; }
+  .empty{ padding:48px;text-align:center;color:var(--ink3);font-size:13px; }
+  /* independent scroll for split pages so right panel stays in view */
+  #page-effect .split, #page-doc .split{ height:calc(100vh - 176px); align-items:stretch; }
+  #page-doc .split{ height:calc(100vh - 150px); }
+  #page-effect .split .left, #page-doc .split .left{ overflow-y:auto; height:100%; padding-right:6px; }
+  #page-effect .panel, #page-doc .panel{ height:100%; }
+  /* clickable chunk index + source link */
+  .cidx{ color:var(--primary);font-weight:700;cursor:pointer;background:#eef2ff;padding:0 6px;border-radius:5px;margin-right:6px; }
+  .cidx:hover{ background:#e0e7ff; }
+  .srclink{ color:var(--primary);cursor:pointer;border-bottom:1px dotted var(--primary); }
+  .fcard.flash{ outline:2px solid var(--primary);background:#f5f8ff; }
+  .chunk.flash{ outline:2px solid var(--primary);background:#f5f8ff; }
+  .hist-item{ padding:11px 13px;border:1px solid var(--line);border-radius:9px;margin-bottom:9px;cursor:pointer; }
+  .hist-item:hover{ border-color:var(--primary);background:#f8faff; }
+  .hist-item .hq{ font-size:13px;color:var(--ink);font-weight:600; } .hist-item .hm{ font-size:11.5px;color:var(--ink3);margin-top:3px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">朋</div>
+      <div><div class="brand-name">商务助理</div><div class="brand-sub">AI 智能问答平台 · V2</div></div>
+    </div>
+    <nav class="nav" id="nav">
+      <div class="nav-item active" data-page="kb" onclick="navMenu('kb')"><span class="ic">📚</span> 知识库管理</div>
+      <div class="nav-item" data-page="effect" onclick="navMenu('effect')"><span class="ic">📊</span> 效果测试</div>
+      <div class="nav-item" data-page="board" onclick="navMenu('board')" id="nav-board"><span class="ic">📈</span> 问答质量看板 <span class="nav-badge">技术</span></div>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="avatar" id="sf-av">林</div>
+      <div><div class="sf-name" id="sf-name">林佳</div><div class="sf-role" id="sf-role">商务主管</div></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <header class="topbar">
+      <span class="top-title" id="top-title">知识库管理</span>
+      <div class="top-spacer"></div>
+      <div class="seg"><label>事业部</label>
+        <select class="ctl" id="line-sel" onchange="switchLine()">
+          <option value="杭综淘宝">杭综淘宝</option>
+          <option value="杭综抖音">杭综抖音</option>
+          <option value="杭抖">杭抖</option>
+        </select>
+      </div>
+      <div class="seg"><label>角色</label>
+        <div class="role-pill" id="role-pill">
+          <button class="on" onclick="setRole('bd')">商务主管</button>
+          <button onclick="setRole('tech')">技术主管</button>
+        </div>
+      </div>
+    </header>
+    <div class="content" id="content">
+
+      <!-- PAGE: KB LIST -->
+      <section class="page show" id="page-kb">
+        <div class="toolbar">
+          <div class="search"><span class="si">🔍</span><input placeholder="搜索知识库…" oninput="renderKBList(this.value)"></div>
+          <select class="ctl" onchange="renderKBList()" id="kb-f-src"><option value="all">全部来源</option><option value="system">系统内置</option><option value="user">用户上传</option></select>
+          <select class="ctl" onchange="renderKBList()" id="kb-f-st"><option value="all">全部状态</option><option value="ready">已就绪</option><option value="processing">处理中</option><option value="disabled">已停用</option><option value="failed">失败</option></select>
+          <div class="spacer"></div>
+          <span class="count" id="kb-count"></span>
+          <button class="btn primary" onclick="openNewKB()">＋ 新建知识库</button>
+        </div>
+        <div class="grid" id="kb-grid"></div>
+      </section>
+
+      <!-- PAGE: KB DETAIL -->
+      <section class="page" id="page-detail">
+        <button class="btn sm" onclick="goBack()" style="margin-bottom:10px">← 返回</button>
+        <div class="crumb"><a onclick="navMenu('kb')">知识库管理</a> › <span id="dt-crumb"></span></div>
+        <div class="dhead">
+          <div class="di ic-blue" id="dt-ic">📘</div>
+          <div style="flex:1"><h2 id="dt-name"></h2><div class="ds" id="dt-desc"></div></div>
+          <button class="btn primary" onclick="openUpload()">↑ 上传文档</button>
+        </div>
+        <div class="stats" id="dt-stats"></div>
+        <div class="tabs">
+          <div class="tab on" onclick="detailTab('docs',this)">全部文档</div>
+          <div class="tab" onclick="detailTab('info',this)">基本信息</div>
+        </div>
+        <div id="dt-docs-wrap">
+          <div class="toolbar">
+            <select class="ctl" id="dt-mod" onchange="renderDocs()"><option value="all">全部模块</option><option>商家CRM</option><option>商品中心</option><option>选品管理</option><option>合同管理</option></select>
+            <div class="search"><span class="si">🔍</span><input placeholder="搜索文档…" oninput="renderDocs(this.value)"></div>
+            <div class="spacer"></div><span class="count" id="dt-doccount"></span>
+          </div>
+          <div class="grid" id="dt-docgrid"></div>
+        </div>
+        <div id="dt-info-wrap" class="hide" style="max-width:560px">
+          <div class="field"><label>知识库名称</label><input id="info-name" disabled></div>
+          <div class="field"><label>路由说明 / 描述</label><textarea rows="3" id="info-desc" disabled></textarea></div>
+          <div class="field"><label>归属事业部</label><input id="info-line" disabled></div>
+          <div class="field"><label>数据来源</label><input id="info-src" disabled></div>
+          <div class="field"><label>当前状态</label><input id="info-status" disabled></div>
+          <div class="field"><label>最近一次操作</label><input id="info-lastop" disabled></div>
+          <div class="row" style="gap:10px"><button class="btn primary hide" id="info-save" onclick="saveKBInfo()">保存修改</button><button class="btn hide" id="dt-toggle" onclick="toggleKB()"></button></div>
+        </div>
+      </section>
+
+      <!-- PAGE: DOC DETAIL -->
+      <section class="page" id="page-doc">
+        <button class="btn sm" onclick="goBack()" style="margin-bottom:10px">← 返回</button>
+        <div class="crumb"><a onclick="navMenu('kb')">知识库管理</a> › <a onclick="backToDetail()" id="doc-crumb-kb"></a> › <span id="doc-crumb"></span></div>
+        <div class="split">
+          <div class="left">
+            <div class="dhead"><div class="di ic-green">📄</div><div style="flex:1"><h2 id="doc-name"></h2><div class="ds" id="doc-desc"></div></div></div>
+            <div class="stats" id="doc-stats"></div>
+            <div class="tabs"><div class="tab on" onclick="docTab('chunks',this)">切片内容</div><div class="tab" onclick="docTab('info',this)">基本信息</div></div>
+            <div id="doc-chunks-wrap">
+              <div class="toolbar"><div class="search"><span class="si">🔍</span><input placeholder="搜索切片…" oninput="renderChunks(this.value)"></div><div class="spacer"></div><span class="count" id="doc-chunkcount"></span></div>
+              <div id="doc-chunks"></div>
+            </div>
+            <div id="doc-info-wrap" class="hide" style="max-width:520px">
+              <div class="field"><label>文档名称</label><input id="docinfo-name" disabled></div>
+              <div class="field"><label>描述</label><textarea rows="2" id="docinfo-desc" disabled></textarea></div>
+              <div class="field"><label>文件类型 / 状态</label><input id="docinfo-meta" disabled></div>
+              <div class="field"><label>最后更新</label><input id="docinfo-time" disabled></div>
+              <div class="field"><label>最近一次操作</label><input id="docinfo-lastop" disabled></div>
+              <button class="btn hide" id="doc-toggle" onclick="toggleDoc()"></button>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-h"><div class="pt">⚡ 知识库测试 · 本库<button class="btn sm" onclick="clearChat('doc')">清空</button></div><div class="ps">仅测试当前知识库的检索效果（单库）</div></div>
+            <div class="chat" id="doc-chat">
+              <div class="info-banner">这里只测试本知识库的命中效果（与「效果测试」的全链路不同）。输入问题开始测试。</div>
+              <div><div class="chip" onclick="docTest('如何新建供应商？')">试试：如何新建供应商？</div><div class="chip" onclick="docTest('联行号在哪补充？')">试试：联行号在哪补充？</div></div>
+            </div>
+            <div class="panel-foot"><textarea id="doc-chat-in" placeholder="输入问题测试本库…"></textarea>
+              <div class="row" style="margin-top:8px;justify-content:flex-end"><button class="btn primary sm" onclick="docTest()">发送</button></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAGE: FAQ -->
+      <section class="page" id="page-faq">
+        <button class="btn sm" onclick="goBack()" style="margin-bottom:10px">← 返回</button>
+        <div class="crumb"><a onclick="navMenu('kb')">知识库管理</a> › <span id="faq-crumb"></span></div>
+        <div class="dhead"><div class="di ic-amber">💬</div><div style="flex:1"><h2 id="faq-name"></h2><div class="ds" id="faq-desc"></div></div>
+          <button class="btn primary" onclick="openFaqImport()">↑ 导入 FAQ</button></div>
+        <div class="stats" id="faq-stats"></div>
+        <div class="toolbar"><div class="search"><span class="si">🔍</span><input placeholder="搜索 FAQ…" oninput="renderFaq(this.value)"></div><div class="spacer"></div><span class="count" id="faq-count"></span></div>
+        <div id="faq-list"></div>
+      </section>
+
+      <!-- PAGE: EFFECT -->
+      <section class="page" id="page-effect">
+        <div class="toolbar">
+          <select class="ctl" id="ef-time" onchange="renderFeed()"><option value="all">全部时间</option><option value="today">今日</option><option value="7d">近7天</option></select>
+          <select class="ctl" id="ef-status" onchange="renderFeed()"><option value="all">全部状态</option><option value="ok">已回复</option><option value="miss">未命中·兜底</option><option value="silent">意图静默</option></select>
+          <select class="ctl" id="ef-line" onchange="renderFeed()"><option value="all">全部事业部</option><option>杭综淘宝</option><option>杭综抖音</option><option>杭抖</option></select>
+          <select class="ctl" id="ef-group" onchange="renderFeed()"><option value="all">全部群聊</option></select>
+          <select class="ctl" id="ef-worker" onchange="renderFeed()"><option value="all">全部worker</option><option>RAG·操作手册</option><option>RAG·会话沉淀</option><option>物流</option><option>合同</option><option>报价</option><option>违规扣分</option><option>缓存命中</option><option>FAQ命中</option></select>
+          <select class="ctl" id="ef-fill" onchange="renderFeed()"><option value="all">是否填槽</option><option value="yes">含填槽</option><option value="no">无填槽</option></select>
+          <div class="spacer"></div><span class="count" id="ef-count"></span>
+        </div>
+        <div class="split">
+          <div class="left"><div class="feed" id="ef-feed"></div></div>
+          <div class="panel">
+            <div class="panel-h"><div class="pt">🧪 测试对话 · 全链路<span><button class="btn sm" onclick="openHistory()">历史会话</button> <button class="btn sm" onclick="clearChat('ef')">清空</button></span></div><div class="ps">测整条 Agent 链路（主控+worker+MCP）</div></div>
+            <div style="padding:12px 16px 0">
+              <div class="ffield">
+                <select class="ctl" id="ef-test-line" style="flex:1"><option value="">选择事业部*</option><option>杭综淘宝</option><option>杭综抖音</option><option>杭抖</option></select>
+                <input class="ctl" id="ef-test-brand" placeholder="品牌* 如 品牌A" style="flex:1">
+              </div>
+            </div>
+            <div class="chat" id="ef-chat">
+              <div class="info-banner">选好事业部 + 品牌后开始提问。结果会带 worker 标签与拼接内容；技术主管还可看完整 trace。</div>
+              <div><div class="chip" onclick="efTest('我的货到哪了？')">试试：我的货到哪了？</div><div class="chip" onclick="efTest('这次坑位费多少？')">试试：这次坑位费多少？</div></div>
+            </div>
+            <div class="panel-foot"><textarea id="ef-chat-in" placeholder="输入问题…"></textarea>
+              <div class="row" style="margin-top:8px;justify-content:flex-end"><button class="btn primary sm" onclick="efTest()">发送</button></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAGE: BOARD -->
+      <section class="page" id="page-board">
+        <div class="toolbar">
+          <select class="ctl"><option>近7天</option><option>近30天</option><option>今日</option></select>
+          <select class="ctl"><option>全部事业部</option><option>杭综淘宝</option><option>杭综抖音</option><option>杭抖</option></select>
+          <div class="spacer"></div><button class="btn sm">🔄 刷新</button>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="kl">命中率</div><div class="kv q-hi">86%</div><div class="kd up">▲ 3.1% 较上周</div></div>
+          <div class="kpi"><div class="kl">兜底率</div><div class="kv q-mid">12%</div><div class="kd up">▼ 1.4% 较上周</div></div>
+          <div class="kpi"><div class="kl">首次解决率 FCR</div><div class="kv q-hi">68%</div><div class="kd up">▲ 2.2% 较上周</div></div>
+          <div class="kpi"><div class="kl">意图准确率</div><div class="kv q-hi">83%</div><div class="kd down">▼ 0.6% 较上周</div></div>
+        </div>
+        <div class="board-card"><h3>命中率 / 兜底率趋势（近 7 天）</h3><div id="trend"></div></div>
+        <div class="board-card">
+          <h3>坏案例下钻</h3>
+          <div class="tabs" style="margin-bottom:8px"><div class="tab on" onclick="badTab('miss',this)">兜底</div><div class="tab" onclick="badTab('low',this)">低分召回</div><div class="tab" onclick="badTab('intent',this)">疑似误判</div><div class="tab" onclick="badTab('wfail',this)">Worker 异常</div></div>
+          <div id="bad-list"></div>
+          <div class="note">💡 RAGAS 批量评测（忠实度 / 答案相关性，LLM-as-judge 抽样）将于下一版接入。</div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- NEW KB MODAL -->
+<div class="mask" id="m-newkb"><div class="modal">
+  <div class="modal-h"><span class="mt">新建知识库</span><span class="modal-x" onclick="closeMask('m-newkb')">✕</span></div>
+  <div class="modal-b">
+    <div class="field"><label>归属事业部</label><input id="nk-line" disabled></div>
+    <div class="field"><label>知识库名称 <span class="req">*</span></label><input id="nk-name" placeholder="如：618 大促专题库"></div>
+    <div class="field"><label>路由说明 / 描述 <span class="req">*</span></label><textarea id="nk-desc" rows="3" placeholder="一句话说明这个库装什么、什么问题该路由到它（供主控/RAG 路由判断，必填）"></textarea>
+      <div class="hint">此处不上传文件——建空库后，进入库再「上传文档」，避免一个文件一个库。</div></div>
+  </div>
+  <div class="modal-f"><button class="btn" onclick="closeMask('m-newkb')">取消</button><button class="btn primary" onclick="createKB()">创建</button></div>
+</div></div>
+
+<!-- UPLOAD WIZARD -->
+<div class="mask" id="m-upload"><div class="modal wide"><div class="modal-h"><span class="mt">上传文档 · <span id="up-kbname"></span></span><span class="modal-x" onclick="closeMask('m-upload')">✕</span></div>
+  <div class="modal-b">
+    <div class="steps" id="up-steps">
+      <div class="step on" data-s="1"><span class="sn">1</span>上传</div><div class="step-line"></div>
+      <div class="step" data-s="2"><span class="sn">2</span>设置</div><div class="step-line"></div>
+      <div class="step" data-s="3"><span class="sn">3</span>分段预览</div><div class="step-line"></div>
+      <div class="step" data-s="4"><span class="sn">4</span>处理</div>
+    </div>
+    <!-- s1 -->
+    <div class="up-page" data-p="1">
+      <div class="field"><label>知识库名称</label><input id="up-name" disabled></div>
+      <div class="field"><label>路由说明 / 描述</label><textarea id="up-desc" rows="2" disabled></textarea></div>
+      <div class="drop" onclick="pickFile()"><div style="font-size:26px">⬆</div><div class="dt">点击或拖拽本地文档到此处上传</div><div style="font-size:12px">支持 .docx / .pdf / .txt</div></div>
+      <div class="fileitem" id="up-file"><span>📄</span><span>如何创建保量合同.docx</span><span style="color:var(--ink3)">（1.2 MB）</span><span class="rm" onclick="this.parentElement.style.opacity=.4">移除</span></div>
+    </div>
+    <!-- s2 -->
+    <div class="up-page hide" data-p="2">
+      <div class="ssect">📄 文档解析策略</div>
+      <div class="opt on" onclick="pickOpt(this,'parse')"><div class="on-row"><span class="radio"></span><span class="oname">精准解析</span></div>
+        <div class="odesc">提取文档中的图片、表格、扫描件，解析更准、耗时稍长</div>
+        <div class="checks"><label><input type="checkbox" checked>图片元素</label><label><input type="checkbox" checked>扫描件 OCR</label><label><input type="checkbox" checked>表格元素</label></div></div>
+      <div class="opt" onclick="pickOpt(this,'parse')"><div class="on-row"><span class="radio"></span><span class="oname">快速解析</span></div><div class="odesc">不提取图片/表格，纯文字、速度快</div></div>
+      <div class="ssect" style="margin-top:16px">✂ 分段策略</div>
+      <div class="opt on" onclick="pickOpt(this,'seg')"><div class="on-row"><span class="radio"></span><span class="oname">自动判断（默认）</span></div><div class="odesc">有清晰标题层级 → 层级切分；无 → 语义分段</div></div>
+      <div class="opt" onclick="pickOpt(this,'seg')"><div class="on-row"><span class="radio"></span><span class="oname">层级切分</span></div><div class="odesc">按 H1/H2/H3 标题层级切，保留树状结构</div></div>
+      <div class="opt" onclick="pickOpt(this,'seg')"><div class="on-row"><span class="radio"></span><span class="oname">语义分段</span></div><div class="odesc">按语义边界切，适合无清晰标题的松散文档</div></div>
+    </div>
+    <!-- s3 -->
+    <div class="up-page hide" data-p="3">
+      <div class="prev3">
+        <div class="prevcol"><div class="ph">文档列表</div><div class="pbody"><div class="docpill">📄 如何创建保量合同.docx</div></div></div>
+        <div class="prevcol"><div class="ph">原始文档预览</div><div class="pbody"><b>如何创建保量合同</b><br>操作路径<br>· 朋友云——合同管理——保量合同<br><br><b>创建保量合同</b><br>1. 进入合同管理菜单，点击【新建保量合同】<br>2. 填写合作品牌、金额、保量指标…<br>3. 提交审批，审批通过后生效</div></div>
+        <div class="prevcol"><div class="ph">分段预览（只读）</div><div class="pbody" id="up-segs"></div></div>
+      </div>
+      <div class="note">💡 质量条表示切片完整度；低质切片建议返回上一步切换分段策略重新处理（不支持手动编辑切片）。</div>
+    </div>
+    <!-- s4 -->
+    <div class="up-page hide" data-p="4">
+      <div class="ssect">⚙ 服务端处理中…（不影响正常使用，完成后即可被引用）</div>
+      <div class="fileitem"><span>📄</span><span style="flex:1">如何创建保量合同.docx</span><span id="up-pct">0%</span></div>
+      <div class="progress"><div class="pf" id="up-prog" style="width:1%"></div></div>
+    </div>
+  </div>
+  <div class="modal-f"><button class="btn hide" id="up-prev" onclick="upStep(-1)">← 上一步</button><button class="btn primary" id="up-next" onclick="upStep(1)">下一步 →</button></div>
+</div></div>
+
+<!-- FAQ IMPORT -->
+<div class="mask" id="m-faq"><div class="modal"><div class="modal-h"><span class="mt">导入 FAQ</span><span class="modal-x" onclick="closeMask('m-faq')">✕</span></div>
+  <div class="modal-b">
+    <div class="hint" style="margin-bottom:14px">向「<span id="faq-imp-name"></span>」追加 Q-A 条目（追加，非新建库）。</div>
+    <div class="field"><label>① 下载模板</label><button class="btn" onclick="toast('已下载 FAQ 导入模板.xlsx')">⬇ 下载 Excel 模板</button></div>
+    <div class="field"><label>② 上传填好的表</label><div class="drop" onclick="faqUploaded()"><div style="font-size:22px">⬆</div><div class="dt">点击或拖拽 .xlsx 到此处</div></div>
+      <div class="fileitem hide" id="faq-file"><span>📊</span><span>FAQ补充_0609.xlsx</span><span style="color:var(--ink3)">（32 条）</span></div></div>
+    <div id="faq-check" class="hide">
+      <div class="field"><label>解析校验</label>
+        <div style="font-size:13px;color:var(--ok);margin-bottom:8px">✓ 30 条可导入</div>
+        <div style="background:#fff7f7;border:1px solid #fbd5d5;border-radius:8px;padding:11px 13px;font-size:12.5px;color:var(--ink2)">
+          ⚠ 2 条疑似重复 / 冲突（语义相似）<br>
+          <div style="margin-top:7px;padding-top:7px;border-top:1px dashed #fbd5d5">
+            · 新 Q「<b>怎么退坑位费</b>」≈ 已有「坑位费退款流程」，A 不一致
+            <div style="margin-top:6px"><button class="btn sm" onclick="toast('已选择：合并')">合并</button> <button class="btn sm" onclick="toast('已选择：保留')">保留</button> <button class="btn sm" onclick="toast('已选择：覆盖')">覆盖</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-f"><button class="btn" onclick="closeMask('m-faq')">取消</button><button class="btn primary" onclick="confirmFaqImport()">确认导入</button></div>
+</div></div>
+
+<!-- TRACE DRAWER -->
+<div class="drawer-mask" id="drawer-mask" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-h"><div><div class="dt">完整编排 trace</div><div class="drawer-meta" id="drawer-meta"></div></div><span class="modal-x" onclick="closeDrawer()">✕</span></div>
+  <div class="drawer-b" id="drawer-body"></div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="mask" id="m-confirm"><div class="modal" style="width:400px">
+  <div class="modal-h"><span class="mt">删除确认</span><span class="modal-x" onclick="closeMask('m-confirm')">✕</span></div>
+  <div class="modal-b"><div id="confirm-msg" style="font-size:14px;line-height:1.7;color:var(--ink)"></div></div>
+  <div class="modal-f"><button class="btn" onclick="closeMask('m-confirm')">取消</button><button class="btn danger" onclick="doConfirm()">确定删除</button></div>
+</div></div>
+
+<!-- HISTORY DRAWER -->
+<div class="drawer-mask" id="hist-mask" onclick="closeHistory()"></div>
+<div class="drawer" id="hist-drawer">
+  <div class="drawer-h"><div><div class="dt">历史会话</div><div class="drawer-meta">测试对话的历史记录，点击可回看</div></div><span class="modal-x" onclick="closeHistory()">✕</span></div>
+  <div class="drawer-b" id="hist-body"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ MOCK DATA ============ */
+const LINES = ['杭综淘宝','杭综抖音','杭抖'];
+
+// knowledge bases per 事业部
+const KBS = {
+  '杭综淘宝':[
+    {id:'manual', name:'朋友云操作手册库', desc:'朋友云商家后台四模块操作指引', icon:'📘',ic:'ic-blue', src:'system', type:'word', status:'ready', count:'620 切片', quality:98, time:'2026-05-28 10:30', lastOp:null, faq:false},
+    {id:'faq', name:'客服 FAQ 知识库', desc:'高频操作问答集合（双向词覆盖命中）', icon:'💬',ic:'ic-amber', src:'user', type:'FAQ', status:'ready', count:'128 条', quality:96, time:'2026-05-25 14:20', lastOp:'2026-05-25 14:20 启用', faq:true},
+    {id:'topic', name:'618 大促专题库', desc:'大促期间临时活动规则与提报口径', icon:'📗',ic:'ic-green', src:'user', type:'word', status:'ready', count:'39 切片', quality:88, time:'2026-06-08 09:10', lastOp:'2026-06-08 09:10 启用', faq:false},
+    {id:'old', name:'旧版招商规则库', desc:'2024 招商规则，已归档', icon:'📕',ic:'ic-purple', src:'user', type:'pdf', status:'disabled', count:'40 切片', quality:62, time:'2026-04-02 16:00', lastOp:'2026-04-02 16:00 停用', faq:false},
+  ],
+  '杭综抖音':[
+    {id:'manual', name:'朋友云操作手册库', desc:'抖音事业部操作指引', icon:'📘',ic:'ic-blue', src:'system', type:'word', status:'ready', count:'540 切片', quality:95, time:'2026-05-26 11:00', lastOp:null, faq:false},
+    {id:'faq', name:'客服 FAQ 知识库', desc:'抖音事业部高频问答', icon:'💬',ic:'ic-amber', src:'user', type:'FAQ', status:'ready', count:'96 条', quality:94, time:'2026-05-20 10:00', lastOp:'2026-05-20 10:00 启用', faq:true},
+  ],
+  '杭抖':[
+    {id:'manual', name:'朋友云操作手册库', desc:'杭抖事业部操作指引', icon:'📘',ic:'ic-blue', src:'system', type:'word', status:'ready', count:'480 切片', quality:97, time:'2026-05-22 09:30', lastOp:null, faq:false},
+    {id:'faq', name:'客服 FAQ 知识库', desc:'杭抖事业部高频问答', icon:'💬',ic:'ic-amber', src:'user', type:'FAQ', status:'ready', count:'72 条', quality:96, time:'2026-05-18 15:00', lastOp:'2026-05-18 15:00 启用', faq:true},
+  ],
+};
+
+// 用户自主上传知识库的文档（直接用上传文档的本地文件名；支持单文档停用）
+const USER_DOCS = {
+  topic:[
+    {name:'618大促玩法说明_v2.docx', type:'word', status:'ready',    cnt:18, q:91, time:'2026-06-08', lastOp:'2026-06-08 09:12 启用'},
+    {name:'大促招商口径FAQ.xlsx',     type:'xlsx', status:'ready',    cnt:12, q:88, time:'2026-06-08', lastOp:'2026-06-08 09:15 启用'},
+    {name:'历史活动总结(草稿).pdf',   type:'pdf',  status:'disabled', cnt:9,  q:73, time:'2026-06-07', lastOp:'2026-06-08 10:02 停用'},
+  ],
+};
+
+// 操作手册 documents (real names from routing map, with module + status + quality variety)
+const DOCS = [
+  {m:'商家CRM', name:'朋友云如何新建/编辑供应商.docx', desc:'供应商新建与编辑操作', type:'word', status:'ready', cnt:24, q:99, time:'2026-05-20'},
+  {m:'商家CRM', name:'如何补充结算主体联行号.docx', desc:'结算主体联行号补充', type:'word', status:'ready', cnt:12, q:92, time:'2026-05-19'},
+  {m:'商家CRM', name:'商机管理操作手册.docx', desc:'新建商机·详情·释放·分配·公海认领', type:'word', status:'ready', cnt:38, q:88, time:'2026-05-18'},
+  {m:'商品中心', name:'招商计划报名及福袋测链商品提报.docx', desc:'招商报名/福袋/测链提报', type:'word', status:'ready', cnt:30, q:90, time:'2026-05-17'},
+  {m:'商品中心', name:'爆品申请操作指引.docx', desc:'爆品申请与特批', type:'word', status:'ready', cnt:16, q:85, time:'2026-05-16'},
+  {m:'商品中心', name:'口播稿管理及审核功能操作手册.docx', desc:'口播稿管理与审核', type:'word', status:'ready', cnt:22, q:95, time:'2026-05-15'},
+  {m:'商品中心', name:'直播业务中台系统功能使用(北抖).docx', desc:'直播业务中台功能', type:'word', status:'processing', cnt:18, q:null, time:'2026-06-07'},
+  {m:'商品中心', name:'爆品趋势预测操作手册.docx', desc:'爆品趋势预测', type:'word', status:'ready', cnt:14, q:78, time:'2026-05-14'},
+  {m:'商品中心', name:'如何修改绑定商务.docx', desc:'商务绑定修改', type:'word', status:'ready', cnt:8, q:70, time:'2026-05-10'},
+  {m:'选品管理', name:'如何上传付款凭证及生成预付款单.docx', desc:'付款凭证上传与预付款单', type:'word', status:'ready', cnt:20, q:93, time:'2026-05-13'},
+  {m:'选品管理', name:'高风险主体低佣特批发起.docx', desc:'特批发起流程', type:'word', status:'ready', cnt:26, q:82, time:'2026-05-12'},
+  {m:'选品管理', name:'新建上播记录及更新上播状态.docx', desc:'上播记录与状态', type:'word', status:'ready', cnt:16, q:89, time:'2026-05-11'},
+  {m:'选品管理', name:'商务确认流程.docx', desc:'商务确认流程', type:'word', status:'ready', cnt:9, q:96, time:'2026-05-10'},
+  {m:'选品管理', name:'AI生成利益点使用手册.docx', desc:'AI 生成利益点', type:'word', status:'ready', cnt:12, q:87, time:'2026-05-09'},
+  {m:'合同管理', name:'如何创建保量合同.docx', desc:'保量合同创建', type:'word', status:'ready', cnt:28, q:94, time:'2026-05-08'},
+  {m:'合同管理', name:'如何撤回保量合同及延长合作时间.docx', desc:'撤回与延长', type:'word', status:'ready', cnt:15, q:83, time:'2026-05-07'},
+  {m:'合同管理', name:'框架提现转移审批发起.docx', desc:'框架提现/转移审批', type:'word', status:'failed', cnt:0, q:null, time:'2026-06-06'},
+  {m:'合同管理', name:'如何确认驳回回款状态.docx', desc:'回款状态确认/驳回', type:'word', status:'ready', cnt:13, q:90, time:'2026-05-06'},
+];
+
+const CHUNKS = [
+  {n:1, t:'朋友云如何新建供应商 / 操作路径：朋友云——商家CRM——客商管理。在客商管理菜单选择供应商页签，点击【新建】。', q:90},
+  {n:2, t:'填写供应商信息：供应商名称（必填）、联系人姓名、联系方式、供货类目、备注信息，填写完成后点击【保存】完成新建。', q:85},
+  {n:3, t:'编辑供应商：在供应商列表中找到目标供应商，点击【编辑】进入编辑界面，修改相应字段后点击【保存】。', q:65},
+  {n:4, t:'保存后即生效。', q:35},
+  {n:5, t:'如需批量导入供应商，可在右上角点击【批量导入】，下载模板填写后上传，系统将自动校验并入库。', q:92},
+];
+
+const FAQS = [
+  {id:'f1', q:'保量合同怎么创建？', a:'进入「合同管理-保量合同」，点击【新建保量合同】，填写合作品牌、金额与保量指标后提交审批，审批通过即生效。', qual:98, conflict:false, status:'ready'},
+  {id:'f2', q:'联行号在哪里补充？', a:'在「商家CRM-客商管理-结算主体」中找到对应主体，点击【编辑】补充联行号并保存。', qual:95, conflict:false, status:'ready'},
+  {id:'f3', q:'爆品怎么申请？', a:'在「商品中心-爆品申请」发起申请，按提示填写商品与服务类型，提交后进入特批审批流程。', qual:93, conflict:false, status:'ready'},
+  {id:'f4', q:'付款凭证如何上传？', a:'在「选品管理-付款管理」上传付款凭证并生成预付款单，等待财务确认。', qual:91, conflict:false, status:'ready'},
+  {id:'f5', q:'坑位费退款流程是什么？', a:'在合同详情页发起退款申请，选择退款原因提交，审批通过后原路退回。', qual:80, conflict:true, status:'disabled'},
+  {id:'f6', q:'怎么修改绑定的商务？', a:'在「商品中心-商务绑定」中选择目标商品，点击【修改绑定商务】并确认。', qual:88, conflict:false, status:'ready'},
+];
+
+// effect-test feed (covers all states & workers)
+const FEED = [
+  {id:'m1', t:'10:31', dt:1, line:'杭综淘宝', g:'群#TB-1207', brand:'美妆品牌A', user:'林佳', status:'ok', fill:true,
+   q:'我的货到哪了？另外怎么补联行号', a:'您的订单已发货，预计 06-10 送达；联行号在「商家CRM-客商管理-结算主体」编辑里补充。',
+   slots:[{q:'请问是哪个订单号？',w:'物流'}],
+   workers:[{k:'物流', type:'mcp', out:'MCP pengyou.logistics → {状态:已发货, 快递:顺丰, 运单号:SF1234567890, 预计:06-10}'},
+            {k:'RAG·操作手册', type:'rag', chunks:[
+              {idx:7, t:'结算主体联行号补充：进入「商家CRM-客商管理-结算主体」，在列表中找到对应结算主体，点击【编辑】，在「银行信息」中填写 12 位联行号后点击保存。联行号可在开户银行或人行官网查询。', src:'如何补充结算主体联行号.docx', s:0.82, doc:true},
+              {idx:3, t:'客商管理菜单路径说明：朋友云顶部导航进入「商家CRM」，左侧菜单选择「客商管理」，可在「供应商」与「结算主体」两个页签之间切换，分别维护对应信息。', src:'朋友云如何新建/编辑供应商.docx', s:0.79, doc:true},
+              {idx:12, t:'结算主体新建后需补全开户行名称、银行账号、联行号三项信息后才能用于后续结算与回款，三项缺一不可，否则提交时会报「结算信息不完整」。', src:'如何补充结算主体联行号.docx', s:0.74, doc:true}
+            ]}],
+   trace:'logistics'},
+  {id:'m2', t:'10:18', dt:1, line:'杭综淘宝', g:'群#TB-1207', brand:'美妆品牌A', user:'林佳', status:'ok', fill:false,
+   q:'你上次说的那个保量合同的延长流程是怎么弄来着', a:'按上次提到的：在合同详情页点击【延长合作时间】，填写新的合作结束日期后提交审批即可。',
+   workers:[{k:'RAG·会话沉淀', type:'rag', chunks:[
+              {idx:1, t:'（本群会话存档 · 05-30 16:42）当时已向该群说明：保量合同的延长入口在「合同详情页」，点击【延长合作时间】即可填写新周期，无需重新创建合同。', src:'本群会话存档', s:0.88, doc:false}
+            ]},
+            {k:'RAG·操作手册', type:'rag', chunks:[
+              {idx:5, t:'撤回保量合同及延长合作时间：进入合同管理找到目标保量合同，打开合同详情页，点击【延长合作时间】，选择新的合作结束日期，确认后提交审批，审批通过即生效。', src:'如何撤回保量合同及延长合作时间.docx', s:0.81, doc:true},
+              {idx:9, t:'保量合同延长仅支持向后延长合作结束时间，不支持缩短；延长期间保量指标按原比例顺延，如需调整指标需另发起变更。', src:'如何撤回保量合同及延长合作时间.docx', s:0.73, doc:true}
+            ]}]},
+  {id:'m3', t:'09:52', dt:1, line:'杭综淘宝', g:'群#TB-3302', brand:'食品品牌C', user:'王敏', status:'ok', fill:false,
+   q:'保量合同怎么创建？', a:'进入「合同管理-保量合同」，点击新建，填写品牌/金额/保量指标后提交审批。',
+   workers:[{k:'FAQ命中', type:'faq'}]},
+  {id:'m4', t:'09:40', dt:1, line:'杭综抖音', g:'群#DY-088', brand:'服饰品牌B', user:'赵磊', status:'miss', fill:false,
+   q:'你们这边有什么节日优惠活动吗', a:'抱歉，未找到相关信息请联系对应商务。', workers:[{k:'RAG·操作手册', type:'rag', chunks:[]}], missReason:'检索为空 / 全部低于 0.7 阈值（最高 rerank 0.31）'},
+  {id:'m5', t:'09:31', dt:1, line:'杭综抖音', g:'群#DY-088', brand:'服饰品牌B', user:'赵磊', status:'silent', fill:false,
+   q:'哈哈好的收到啦谢谢~', silentReason:'need_reply=false · conf 0.42 < 0.75'},
+  {id:'m6', t:'昨日 16:20', dt:2, line:'杭抖', g:'群#HD-4501', brand:'数码品牌E', user:'孙琪', status:'ok', fill:false,
+   q:'这次活动的坑位费是多少？', a:'本次活动坑位费为 ¥12,000，已含一次返场，详情以合同为准。',
+   workers:[{k:'报价', type:'mcp', out:'MCP pengyou.quote → {坑位费:12000, 含返场:1次, 结算方式:预付}'}], trace:'quote'},
+  {id:'m7', t:'昨日 15:05', dt:2, line:'杭综淘宝', g:'群#TB-2210', brand:'母婴品牌D', user:'周宁', status:'ok', fill:false,
+   q:'我那份框架合同签约状态到哪一步了', a:'您的框架合同当前状态：待品牌方签署（已商务方签署），签署后即生效。',
+   workers:[{k:'合同', type:'mcp', out:'MCP pengyou.contract → {类型:框架, 状态:待品牌方签署, 商务方:已签}'}]},
+  {id:'m8', t:'昨日 11:30', dt:2, line:'杭抖', g:'群#HD-4502', brand:'家居品牌F', user:'吴磊', status:'ok', fill:false,
+   q:'我这个月被扣分了吗？', a:'本月您的账号违规扣分为 0 分，状态正常。',
+   workers:[{k:'违规扣分', type:'mcp', out:'MCP pengyou.penalty → {本月扣分:0, 状态:正常}'}]},
+  {id:'m9', t:'昨日 10:02', dt:2, line:'杭综淘宝', g:'群#TB-1207', brand:'美妆品牌A', user:'林佳', status:'ok', fill:false,
+   q:'怎么上传付款凭证', a:'在「选品管理-付款管理」点击上传付款凭证，并生成预付款单等待财务确认。',
+   workers:[{k:'缓存命中', type:'cache'}]},
+  {id:'m10', t:'昨日 14:10', dt:2, line:'杭综淘宝', g:'群#TB-5510', brand:'美妆品牌A', user:'林佳', status:'miss', fill:false,
+   q:'帮我查下这个月的扣分明细', a:'抱歉，未找到相关信息请联系对应商务。',
+   workers:[{k:'违规扣分', type:'mcp', out:'MCP pengyou.penalty → ✗ 调用超时（已重试 3 次失败）'}],
+   missReason:'违规扣分 worker · MCP 调用超时（重试 3 次失败）→ 兜底', trace:'wfail'},
+  {id:'m11', t:'昨日 13:48', dt:2, line:'杭综淘宝', g:'群#TB-2211', brand:'母婴品牌D', user:'周宁', status:'miss', fill:false,
+   q:'我那份合同的回款到账了吗', a:'抱歉，未找到相关信息请联系对应商务。',
+   workers:[{k:'合同', type:'mcp', out:'MCP pengyou.contract → ✗ 返回错误码 500（INTERNAL_ERROR）'}],
+   missReason:'合同 worker · MCP 返回错误码 500 → 兜底', trace:'wfail2'},
+  {id:'m12', t:'昨日 13:30', dt:2, line:'杭综抖音', g:'群#DY-0120', brand:'服饰品牌B', user:'赵磊', status:'ok', fill:false,
+   q:'@王经理 这个链接你帮我看下对不对', a:'关于链接对接，可参考商品提报流程…（注：该条 @ 了具体的人，疑似不应触发，属于意图误判）',
+   workers:[{k:'RAG·操作手册', type:'rag', chunks:[
+     {idx:2, t:'招商计划报名：进入「商品中心-招商计划」，选择对应计划点击报名，按提示填写商品链接与服务类型后提交。', src:'招商计划报名及福袋测链商品提报.docx', s:0.71, doc:true}
+   ]}], misjudge:true},
+];
+
+const TRACES = {
+  logistics:{meta:'总耗时 4.2s · ReAct 2 轮 · 停止：信息足够', steps:[
+    {n:'① 接入', b:'事业部=杭综淘宝 · 品牌=美妆品牌A(br_1023) · 群#TB-1207'},
+    {n:'② 意图门', lat:'12ms', b:'need_reply=true · conf 0.91'},
+    {n:'③ 快速通道', b:'缓存 miss · FAQ miss → 进主控'},
+    {n:'④ 主控·拆任务', b:'拆出 2 个 subtask：', subs:['T1 查物流/订单状态 → 路由 物流 worker','T2 怎么补联行号 → 路由 RAG worker(操作手册源)']},
+    {n:'⑤ ReAct 轮1（并行派发）', subs:['物流 worker ⚠ 缺参:订单号 → 回主控请求填槽','RAG(操作手册) query改写→混检→RRF→rerank Top5（280ms）命中 #7「联行号补充」0.82 · #3「客商管理」0.79']},
+    {n:'⑥ 填槽', b:'主控发问「请问是哪个订单号？」→ 用户补「TB20260608001」'},
+    {n:'⑦ ReAct 轮2', subs:['物流 worker(订单号=…001) → MCP pengyou.logistics → {状态:已发货, 预计:06-10}（640ms）']},
+    {n:'⑧ 主控·合成生成', lat:'1.9s', b:'输入=物流字段 + RAG切片 · 模型 qwen3.6'},
+    {n:'⑨ 后处理', b:'分段:否 · 发送成功 · 重试 0'},
+  ]},
+  quote:{meta:'总耗时 1.4s · ReAct 1 轮 · 停止：信息足够', steps:[
+    {n:'① 接入', b:'事业部=杭抖 · 品牌=数码品牌E · 群#HD-4501'},
+    {n:'② 意图门', lat:'10ms', b:'need_reply=true · conf 0.95'},
+    {n:'③ 快速通道', b:'缓存 miss · FAQ miss → 进主控'},
+    {n:'④ 主控·拆任务', b:'1 个 subtask：查坑位费 → 路由 报价 worker'},
+    {n:'⑤ ReAct 轮1', subs:['报价 worker → MCP pengyou.quote → {坑位费:12000, 含返场:1次}（520ms）']},
+    {n:'⑥ 主控·合成生成', lat:'780ms', b:'输入=报价字段 · 模型 qwen3.6'},
+    {n:'⑦ 后处理', b:'分段:否 · 发送成功'},
+  ]},
+  wfail:{meta:'总耗时 30.4s · ReAct 1 轮 · 停止：全链路超时（worker 失败）', steps:[
+    {n:'① 接入', b:'事业部=杭综淘宝 · 品牌=美妆品牌A · 群#TB-5510'},
+    {n:'② 意图门', lat:'11ms', b:'need_reply=true · conf 0.88'},
+    {n:'③ 快速通道', b:'缓存 miss · FAQ miss → 进主控'},
+    {n:'④ 主控·拆任务', b:'1 个 subtask：查扣分明细 → 路由 违规扣分 worker'},
+    {n:'⑤ ReAct 轮1', subs:['违规扣分 worker → MCP pengyou.penalty ⚠ 超时（10s）','重试 1 ⚠ 超时','重试 2 ⚠ 超时','重试 3 ✗ 失败 → 回主控报告不可用']},
+    {n:'⑥ 主控·决策', b:'worker 不可用且无其他信息源 → 走兜底话术，不强行编造'},
+    {n:'⑦ 后处理', b:'发送兜底话术「抱歉，未找到相关信息请联系对应商务」· 已记录异常埋点'},
+  ]},
+  wfail2:{meta:'总耗时 2.1s · ReAct 1 轮 · 停止：worker 返回错误', steps:[
+    {n:'① 接入', b:'事业部=杭综淘宝 · 品牌=母婴品牌D · 群#TB-2211'},
+    {n:'② 意图门', lat:'12ms', b:'need_reply=true · conf 0.90'},
+    {n:'③ 快速通道', b:'缓存 miss · FAQ miss → 进主控'},
+    {n:'④ 主控·拆任务', b:'1 个 subtask：查回款到账状态 → 路由 合同 worker'},
+    {n:'⑤ ReAct 轮1', subs:['合同 worker → MCP pengyou.contract ✗ HTTP 500 INTERNAL_ERROR（1.4s）','worker 捕获错误 → 回主控报告调用失败']},
+    {n:'⑥ 主控·决策', b:'worker 返回错误码且无降级数据源 → 走兜底话术'},
+    {n:'⑦ 后处理', b:'发送兜底话术 · 已记录异常埋点（错误码 500）'},
+  ]},
+};
+
+const BAD = {
+  miss:[{q:'你们这边有什么节日优惠活动吗', m:'群#DY-088 · 兜底 · 检索为空（最高 rerank 0.31）', fid:'m4'}],
+  low:[{q:'@王经理 这个链接你帮我看下对不对', m:'群#DY-0120 · 召回最高仅 0.71 · 命中相关性偏低', fid:'m12'}],
+  intent:[{q:'@王经理 这个链接你帮我看下对不对', m:'群#DY-0120 · 误判为需回复（实为 @ 他人）', fid:'m12'},
+          {q:'哈哈好的收到啦谢谢~', m:'群#DY-088 · 已正确静默（对照案例）', fid:'m5'}],
+  wfail:[{q:'帮我查下这个月的扣分明细', m:'群#TB-5510 · 违规扣分 worker MCP 调用超时（重试 3 次失败）→ 兜底', fid:'m10'},
+         {q:'我那份合同的回款到账了吗', m:'群#TB-2211 · 合同 worker MCP 返回错误码 500 → 兜底', fid:'m11'}],
+};
+
+/* ============ STATE ============ */
+let S = { page:'kb', role:'bd', line:'杭综淘宝', kbId:null, docId:null, upStep:1 };
+
+/* ============ NAV ============ */
+function go(p){
+  S.page=p;
+  document.querySelectorAll('.page').forEach(e=>e.classList.remove('show'));
+  document.getElementById('page-'+p).classList.add('show');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.page===p));
+  const titles={kb:'知识库管理',detail:'知识库管理',doc:'知识库管理',faq:'知识库管理',effect:'效果测试',board:'问答质量看板'};
+  document.getElementById('top-title').textContent=titles[p]||'';
+  if(p==='kb') renderKBList();
+  if(p==='effect') renderFeed();
+  if(p==='board') renderTrend();
+  document.getElementById('content').scrollTop=0;
+}
+
+/* ===== navigation history (back = previous screen) ===== */
+let NAV=[];
+function curState(){ return {page:S.page, kbId:S.kbId, docName:S.docId}; }
+function navMenu(p){ NAV=[]; go(p); }   // top-level nav menu = fresh context
+function findDoc(name){ return DOCS.find(x=>x.name===name) || Object.values(USER_DOCS).flat().find(x=>x.name===name); }
+function applyState(st){
+  if(st.page==='detail'&&st.kbId){ openKB(st.kbId,true); }
+  else if(st.page==='faq'&&st.kbId){ const k=(KBS[S.line]||[]).find(x=>x.id===st.kbId); k?openFaq(k,true):go('kb'); }
+  else if(st.page==='doc'&&st.docName){ const d=findDoc(st.docName); if(d){ S.kbId=st.kbId; openDoc(d,true); } else go('kb'); }
+  else go(st.page||'kb');
+}
+function goBack(){ if(NAV.length){ applyState(NAV.pop()); } else go('kb'); }
+function nowStr(){ const d=new Date(), p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+function docsOfKB(id){ return id==='manual'?DOCS:(USER_DOCS[id]||[]); }
+
+function setRole(r){
+  S.role=r;
+  document.querySelectorAll('#role-pill button').forEach((b,i)=>b.classList.toggle('on', (r==='bd'&&i===0)||(r==='tech'&&i===1)));
+  document.getElementById('sf-name').textContent = r==='bd'?'林佳':'陈工';
+  document.getElementById('sf-role').textContent = r==='bd'?'商务主管':'技术主管';
+  document.getElementById('sf-av').textContent = r==='bd'?'林':'陈';
+  document.getElementById('nav-board').classList.toggle('hide', r==='bd');
+  if(r==='bd'&&S.page==='board') go('kb');
+  if(S.page==='effect') renderFeed();
+  toast(r==='bd'?'已切换：商务主管（看板隐藏 / 不显示完整 trace）':'已切换：技术主管（可见看板与完整 trace）');
+}
+
+function switchLine(){ S.line=document.getElementById('line-sel').value; renderKBList(); toast('已切换事业部：'+S.line); }
+
+/* ============ KB LIST ============ */
+function renderKBList(kw){
+  kw=(kw||'').toLowerCase();
+  const src=document.getElementById('kb-f-src').value, st=document.getElementById('kb-f-st').value;
+  const list=(KBS[S.line]||[]).filter(k=>(src==='all'||k.src===src)&&(st==='all'||k.status===st)&&(!kw||k.name.toLowerCase().includes(kw)||k.desc.toLowerCase().includes(kw)));
+  document.getElementById('kb-count').textContent='共 '+list.length+' 个知识库';
+  const g=document.getElementById('kb-grid'); g.innerHTML='';
+  list.forEach(k=>{
+    const stMap={ready:['已就绪','d-ok'],processing:['处理中','d-warn'],failed:['失败','d-err'],disabled:['已停用','d-mute']}[k.status];
+    const d=document.createElement('div'); d.className='card'; d.onclick=()=>openKB(k.id);
+    d.innerHTML=`<div class="card-head"><div class="card-ic ${k.ic}">${k.icon}</div>
+      <div><div class="card-title">${k.name}</div><div class="card-desc">${k.desc}</div></div></div>
+      <div class="tags"><span class="tag ${k.src==='system'?'tag-sys':'tag-user'}">${k.src==='system'?'系统内置':'用户上传'}</span>
+        <span class="tag ${k.faq?'tag-faq':'tag-type'}">${k.type}</span></div>
+      <div class="card-foot"><div class="row" style="gap:12px">
+        <span class="meta">✂ <b>${k.count}</b></span>
+        ${k.quality!=null?`<span class="meta">质量 <span class="qual ${qcls(k.quality)}">${k.quality}%</span></span>`:'<span class="meta" style="color:var(--ink3)">—</span>'}</div>
+        <span class="meta"><span class="dot ${stMap[1]}"></span>${stMap[0]}</span></div>`;
+    g.appendChild(d);
+  });
+  const add=document.createElement('div'); add.className='card dashed'; add.onclick=openNewKB;
+  add.innerHTML='<div class="plus">＋</div><div style="margin-top:6px;font-weight:600">新建知识库</div><div style="font-size:12px">仅填名称与路由说明</div>';
+  g.appendChild(add);
+}
+function qcls(q){ return q>=90?'q-hi':q>=80?'q-mid':'q-lo'; }
+function qfcls(q){ return q>=80?'qf-hi':q>=60?'qf-mid':'qf-lo'; }
+
+function openKB(id, isBack){
+  if(!isBack) NAV.push(curState());
+  const k=(KBS[S.line]).find(x=>x.id===id); S.kbId=id;
+  if(k.faq){ openFaq(k,true); return; }
+  // detail
+  document.getElementById('dt-crumb').textContent=k.name;
+  document.getElementById('dt-name').textContent=k.name;
+  document.getElementById('dt-desc').textContent=k.desc+' · '+(k.src==='system'?'系统内置':'用户上传');
+  document.getElementById('dt-ic').textContent=k.icon;
+  const docs = docsOfKB(id);
+  document.getElementById('dt-stats').innerHTML=
+    `<div class="stat"><div class="v">${docs.length}</div><div class="l">文档数量</div></div>
+     <div class="stat"><div class="v">${k.count.replace(' 切片','').replace(' 条','')}</div><div class="l">切片数量</div></div>
+     <div class="stat"><div class="v ${k.quality!=null?qcls(k.quality):''}">${k.quality!=null?k.quality+'%':'—'}</div><div class="l">知识库质量</div></div>`;
+  // 停用/启用（仅用户上传库）
+  const tg=document.getElementById('dt-toggle');
+  if(k.src==='user'){ tg.classList.remove('hide'); tg.textContent=k.status==='disabled'?'启用知识库':'停用知识库'; tg.className='btn '+(k.status==='disabled'?'success':'danger'); }
+  else tg.classList.add('hide');
+  // 基本信息（用户库可改名/改描述）
+  const editable=k.src==='user';
+  const ni=document.getElementById('info-name'), di=document.getElementById('info-desc');
+  ni.value=k.name; di.value=k.desc; ni.disabled=!editable; di.disabled=!editable;
+  document.getElementById('info-line').value=S.line;
+  document.getElementById('info-src').value=k.src==='system'?'系统内置':'用户上传';
+  document.getElementById('info-status').value=({ready:'已就绪 / 已启用',processing:'处理中',failed:'失败',disabled:'已停用'}[k.status]);
+  document.getElementById('info-lastop').value=k.src==='system'?'—（系统内置，不支持停用）':(k.lastOp||'—');
+  document.getElementById('info-save').classList.toggle('hide', !editable);
+  detailTab('docs',document.querySelector('#page-detail .tab'));
+  renderDocs();
+  go('detail');
+}
+function toggleKB(){
+  const k=KBS[S.line].find(x=>x.id===S.kbId); if(!k||k.src!=='user') return;
+  const dis=k.status!=='disabled';
+  k.status=dis?'disabled':'ready'; k.lastOp=nowStr()+' '+(dis?'停用':'启用');
+  openKB(S.kbId,true);
+  toast((dis?'已停用知识库「':'已启用知识库「')+k.name+'」');
+}
+function saveKBInfo(){
+  const k=KBS[S.line].find(x=>x.id===S.kbId); if(!k||k.src!=='user') return;
+  const nm=document.getElementById('info-name').value.trim(), ds=document.getElementById('info-desc').value.trim();
+  if(!nm){ toast('名称不能为空'); return; }
+  k.name=nm; k.desc=ds;
+  document.getElementById('dt-name').textContent=nm;
+  document.getElementById('dt-crumb').textContent=nm;
+  document.getElementById('dt-desc').textContent=ds+' · 用户上传';
+  toast('已保存知识库信息');
+}
+function detailTab(t,el){
+  document.querySelectorAll('#page-detail .tab').forEach(x=>x.classList.remove('on')); el&&el.classList.add('on');
+  document.getElementById('dt-docs-wrap').classList.toggle('hide',t!=='docs');
+  document.getElementById('dt-info-wrap').classList.toggle('hide',t!=='info');
+}
+function renderDocs(kw){
+  kw=(kw||'').toLowerCase();
+  const isManual = S.kbId==='manual';
+  const mod=document.getElementById('dt-mod').value;
+  document.getElementById('dt-mod').classList.toggle('hide', !isManual);
+  let docs = docsOfKB(S.kbId).filter(d=>(!kw||d.name.toLowerCase().includes(kw)));
+  if(isManual) docs=docs.filter(d=>(mod==='all'||d.m===mod));
+  document.getElementById('dt-doccount').textContent='共 '+docs.length+' 个文档';
+  const g=document.getElementById('dt-docgrid'); g.innerHTML='';
+  docs.forEach(d=>{
+    const stMap={ready:['已就绪','d-ok'],processing:['处理中','d-warn'],failed:['失败','d-err'],disabled:['已停用','d-mute']}[d.status];
+    const sub = d.m ? (d.m+' · '+d.desc) : (d.type.toUpperCase()+' · 用户上传文档');
+    const c=document.createElement('div'); c.className='card'; c.onclick=()=>openDoc(d);
+    c.innerHTML=`<div class="card-head"><div class="card-ic ic-green">📄</div><div><div class="card-title" style="font-size:14px">${d.name}</div><div class="card-desc">${sub}</div></div></div>
+      <div class="card-foot"><div class="row" style="gap:12px"><span class="meta">✂ <b>${d.cnt}</b></span>
+        ${d.q!=null?`<span class="meta">质量 <span class="qual ${qcls(d.q)}">${d.q}%</span></span>`:'<span class="meta" style="color:var(--ink3)">—</span>'}</div>
+        <span class="meta"><span class="dot ${stMap[1]}"></span>${stMap[0]}</span></div>`;
+    g.appendChild(c);
+  });
+  const add=document.createElement('div'); add.className='card dashed'; add.onclick=openUpload;
+  add.innerHTML='<div class="plus">＋</div><div style="margin-top:6px;font-weight:600">上传文档</div>';
+  g.appendChild(add);
+}
+
+function openDoc(d, isBack){
+  if(!isBack) NAV.push(curState());
+  S.docId=d.name;
+  const kb=KBS[S.line].find(k=>k.id===S.kbId)||{};
+  document.getElementById('doc-crumb-kb').textContent=kb.name||'';
+  document.getElementById('doc-crumb').textContent=d.name;
+  document.getElementById('doc-name').textContent=d.name;
+  document.getElementById('doc-desc').textContent=(d.m?d.m+' · ':'')+(d.desc||'用户上传文档');
+  document.getElementById('doc-stats').innerHTML=
+    `<div class="stat"><div class="v">${d.cnt}</div><div class="l">切片数量</div></div>
+     <div class="stat"><div class="v ${d.q!=null?qcls(d.q):''}">${d.q!=null?d.q+'%':'—'}</div><div class="l">文档质量</div></div>`;
+  // 停用/启用（仅用户上传库的文档）
+  const tg=document.getElementById('doc-toggle');
+  if(kb.src==='user'){ tg.classList.remove('hide'); tg.textContent=d.status==='disabled'?'启用文档':'停用文档'; tg.className='btn '+(d.status==='disabled'?'success':'danger'); }
+  else tg.classList.add('hide');
+  document.getElementById('docinfo-name').value=d.name;
+  document.getElementById('docinfo-desc').value=d.desc||'（用户上传文档，使用本地文件名）';
+  document.getElementById('docinfo-meta').value=d.type.toUpperCase()+' · '+({ready:'已就绪 / 已启用',processing:'处理中',failed:'失败',disabled:'已停用'}[d.status]);
+  document.getElementById('docinfo-time').value=d.time;
+  document.getElementById('docinfo-lastop').value=kb.src==='system'?'—（系统内置，不支持停用）':(d.lastOp||'—');
+  docTab('chunks',document.querySelector('#page-doc .tab'));
+  renderChunks();
+  clearChat('doc');
+  go('doc');
+}
+function toggleDoc(){
+  const kb=KBS[S.line].find(k=>k.id===S.kbId); if(!kb||kb.src!=='user') return;
+  const d=findDoc(S.docId); if(!d) return;
+  const dis=d.status!=='disabled';
+  d.status=dis?'disabled':'ready'; d.lastOp=nowStr()+' '+(dis?'停用':'启用');
+  openDoc(d,true);
+  toast((dis?'已停用文档「':'已启用文档「')+d.name+'」');
+}
+function backToDetail(){ NAV=[{page:'kb',kbId:null,docName:null}]; openKB(S.kbId,true); }
+function docTab(t,el){
+  document.querySelectorAll('#page-doc .tab').forEach(x=>x.classList.remove('on')); el&&el.classList.add('on');
+  document.getElementById('doc-chunks-wrap').classList.toggle('hide',t!=='chunks');
+  document.getElementById('doc-info-wrap').classList.toggle('hide',t!=='info');
+}
+function renderChunks(kw){
+  kw=(kw||'').toLowerCase();
+  const list=CHUNKS.filter(c=>!kw||c.t.toLowerCase().includes(kw));
+  document.getElementById('doc-chunkcount').textContent='共 '+CHUNKS.length+' 个切片';
+  const w=document.getElementById('doc-chunks'); w.innerHTML='';
+  list.forEach(c=>{
+    const d=document.createElement('div'); d.className='chunk';
+    d.innerHTML=`<div class="chunk-h"><span class="chunk-n">切片 #${c.n}</span>
+      <span><span class="qbar"><span class="qfill ${qfcls(c.q)}" style="width:${c.q}%"></span></span> <span class="qual ${qcls(c.q)}" style="font-size:12px">${c.q}%</span></span></div>
+      <div class="chunk-t">${c.t}</div>`;
+    w.appendChild(d);
+  });
+}
+
+/* ============ FAQ ============ */
+function openFaq(k, isBack){
+  if(!isBack) NAV.push(curState());
+  document.getElementById('faq-crumb').textContent=k.name;
+  document.getElementById('faq-name').textContent=k.name;
+  document.getElementById('faq-desc').textContent=k.desc+' · 用户上传';
+  document.getElementById('faq-stats').innerHTML=
+    `<div class="stat"><div class="v">${k.count.replace(' 条','')}</div><div class="l">FAQ 条目</div></div>
+     <div class="stat"><div class="v">${S.line}</div><div class="l">归属事业部</div></div>
+     <div class="stat"><div class="v ${qcls(k.quality)}">${k.quality}%</div><div class="l">FAQ 质量</div></div>`;
+  renderFaq();
+  go('faq');
+}
+function renderFaq(kw){
+  kw=(kw||'').toLowerCase();
+  const list=FAQS.filter(f=>!kw||f.q.toLowerCase().includes(kw)||f.a.toLowerCase().includes(kw));
+  document.getElementById('faq-count').textContent='共 '+FAQS.length+' 条';
+  const w=document.getElementById('faq-list'); w.innerHTML='';
+  if(!list.length){ w.innerHTML='<div class="empty">暂无 FAQ 条目</div>'; return; }
+  list.forEach(f=>{
+    const ready = f.status!=='disabled';
+    const d=document.createElement('div'); d.className='chunk'; if(!ready) d.style.opacity='.7';
+    d.innerHTML=`<div class="faq-q"><span class="faq-ql">Q</span><span style="flex:1">${f.q}</span>${f.conflict?'<span class="conflict">⚠ 冲突</span>':''}</div>
+      <div class="faq-a"><span class="faq-al">A</span><span>${f.a}</span></div>
+      <div class="faq-foot" style="display:flex;align-items:center;gap:10px;margin-top:10px">
+        <span class="st ${ready?'st-ok':'st-silent'}">${ready?'● 已就绪':'○ 已停用'}</span>
+        <span class="meta" style="font-size:12px">质量 <span class="qual ${qcls(f.qual)}">${f.qual}%</span></span>
+        <span style="flex:1"></span>
+        <button class="btn sm ${ready?'danger':'success'}" onclick="toggleFaq('${f.id}')">${ready?'停用':'启用'}</button>
+        <button class="btn sm" onclick="delFaq('${f.id}')">删除</button>
+      </div>`;
+    w.appendChild(d);
+  });
+}
+function toggleFaq(id){
+  const f=FAQS.find(x=>x.id===id); if(!f) return;
+  const dis = f.status!=='disabled';
+  f.status = dis?'disabled':'ready';
+  renderFaq(document.querySelector('#page-faq .search input').value||'');
+  toast((dis?'已停用 FAQ：':'已启用 FAQ：')+f.q);
+}
+function delFaq(id){
+  const f=FAQS.find(x=>x.id===id); if(!f) return;
+  confirmDialog('确定要删除此条数据吗？<div style="color:var(--err);font-size:12.5px;margin-top:6px">删除后将无法复原。</div><div style="margin-top:12px;padding:9px 11px;background:#f8fafc;border-radius:8px;color:var(--ink2);font-size:13px;line-height:1.6">Q：'+f.q+'</div>', function(){
+    const j=FAQS.findIndex(x=>x.id===id); if(j>=0) FAQS.splice(j,1);
+    renderFaq(document.querySelector('#page-faq .search input').value||'');
+    const cnt=document.querySelector('#faq-stats .stat .v'); if(cnt) cnt.textContent=FAQS.length;
+    toast('已删除 FAQ：'+f.q);
+  });
+}
+let _confirmCb=null;
+function confirmDialog(msg,onOk){ document.getElementById('confirm-msg').innerHTML=msg; _confirmCb=onOk; openMask('m-confirm'); }
+function doConfirm(){ closeMask('m-confirm'); const cb=_confirmCb; _confirmCb=null; if(cb) cb(); }
+
+/* ============ EFFECT FEED ============ */
+function renderFeed(highlightFid){
+  const ft=document.getElementById('ef-time').value, fs=document.getElementById('ef-status').value,
+        fl=document.getElementById('ef-line').value, fw=document.getElementById('ef-worker').value, ff=document.getElementById('ef-fill').value,
+        fg=document.getElementById('ef-group').value;
+  let list=FEED.filter(m=>{
+    if(ft==='today'&&m.dt!==1) return false;
+    if(fs!=='all'&&m.status!==fs) return false;
+    if(fl!=='all'&&m.line!==fl) return false;
+    if(fg!=='all'&&m.g!==fg) return false;
+    if(ff==='yes'&&!m.fill) return false; if(ff==='no'&&m.fill) return false;
+    if(fw!=='all'){ const ws=(m.workers||[]).map(w=>w.k); if(!ws.includes(fw)) return false; }
+    return true;
+  });
+  document.getElementById('ef-count').textContent='共 '+list.length+' 条';
+  const f=document.getElementById('ef-feed'); f.innerHTML='';
+  if(!list.length){ f.innerHTML='<div class="empty">暂无符合条件的会话</div>'; return; }
+  list.forEach((m,i)=>f.appendChild(feedCard(m,i)));
+  if(highlightFid){ const card=f.querySelector('[data-fid="'+highlightFid+'"]');
+    if(card){ card.classList.add('flash'); card.scrollIntoView({block:'center',behavior:'smooth'}); setTimeout(()=>card.classList.remove('flash'),2400); } }
+}
+function populateGroups(){
+  const sel=document.getElementById('ef-group'); const seen=[];
+  FEED.forEach(m=>{ if(m.g&&!seen.includes(m.g)) seen.push(m.g); });
+  sel.innerHTML='<option value="all">全部群聊</option>'+seen.map(g=>`<option>${g}</option>`).join('');
+}
+function feedCard(m,i){
+  const d=document.createElement('div'); d.className='fcard'; d.dataset.fid=m.id||('idx'+i);
+  let html=`<div class="fc-top"><span class="gtag">${m.g}</span><span class="btag">${m.brand}</span><span class="btag">${m.line}</span>${m.misjudge?'<span class="st st-miss">⚠ 疑似误判</span>':''}<span class="ftime">${m.t}</span></div>`;
+  html+=`<div class="qa-q"><span class="qa-l ql-u">👤 ${m.user||''}</span><span>${m.q}</span></div>`;
+  if(m.slots){ m.slots.forEach(s=>{ html+=`<div class="slot"><div class="qa-a"><span class="qa-l ql-b">🤖</span><span>${s.q} <span class="wtag fill">填槽·${s.w}</span></span></div></div>`; }); }
+  if(m.status==='silent'){
+    html+=`<div class="silent-log">🔇 未发群 · 日志：该消息无需触发智能问答（${m.silentReason}）</div>`;
+  } else {
+    html+=`<div class="qa-a"><span class="qa-l ql-b">🤖</span><span>${m.a}</span></div>`;
+    html+=`<div class="status-bar">`;
+    html+= m.status==='ok'?`<span class="st st-ok">✓ 已回复</span>`:`<span class="st st-miss">✗ 未命中·兜底</span>`;
+    (m.workers||[]).forEach((w,wi)=>{
+      if(w.type==='cache') html+=`<span class="wtag cache">⚡ 缓存命中</span>`;
+      else if(w.type==='faq') html+=`<span class="wtag faq">★ FAQ 命中</span>`;
+      else html+=`<span class="wtag" onclick="toggleW(${i},${wi})">${w.k} <span class="ar">▾</span></span>`;
+    });
+    if(S.role==='tech'&&m.trace) html+=`<span class="trace-btn" onclick="openTrace('${m.trace}')">⛓ 完整 trace</span>`;
+    html+=`</div>`;
+    // worker expand panels
+    (m.workers||[]).forEach((w,wi)=>{
+      if(w.type==='rag'||w.type==='mcp'){
+        html+=`<div class="wexpand" id="we-${i}-${wi}">`;
+        if(w.type==='rag'){
+          const n=(w.chunks||[]).length;
+          html+=`<div style="font-weight:600;margin-bottom:5px">${w.k} · 拼接回主控的切片（rerank Top${Math.min(5,n)||5}，已过滤 &lt;0.7）</div>`;
+          if(!n) html+=`<div class="src">（无召回 / 全部低于 0.7 阈值，已走兜底）</div>`;
+          else w.chunks.forEach(c=>{
+            const click=c.doc!==false;
+            const idxTag = click
+              ? `<span class="cidx" onclick="openChunkDoc('${c.src}',${c.idx})">#${c.idx}</span>`
+              : `<span class="cidx" style="background:#f1f5f9;color:#64748b;cursor:default">#${c.idx}</span>`;
+            const srcTag = click
+              ? `<span class="srclink" onclick="openChunkDoc('${c.src}',${c.idx})">${c.src}</span>`
+              : `${c.src}`;
+            html+=`<div class="ch"><div>${idxTag}${c.t}</div><div class="src">来源：${srcTag} · rerank <span class="sc">${c.s}</span></div></div>`;
+          });
+        } else {
+          html+=`<div style="font-weight:600;margin-bottom:5px">${w.k} · 拼接回主控的字段</div><div class="ch">${w.out}</div>`;
+        }
+        html+=`</div>`;
+      }
+    });
+    if(m.status==='miss'&&m.missReason) html+=`<div class="silent-log" style="margin-top:7px">未命中原因：${m.missReason}</div>`;
+  }
+  d.innerHTML=html;
+  return d;
+}
+function openChunkDoc(name,idx){
+  const doc=DOCS.find(x=>x.name===name);
+  if(!doc){ toast('该来源为本群会话存档，无对应文档页'); return; }
+  S.kbId='manual'; openDoc(doc);
+  setTimeout(()=>{
+    const chunks=document.querySelectorAll('#doc-chunks .chunk');
+    const el=chunks[(idx-1)] || chunks[0];
+    if(el){ el.classList.add('flash'); el.scrollIntoView({block:'center',behavior:'smooth'}); setTimeout(()=>el.classList.remove('flash'),2400); }
+    toast('已跳转到《'+name+'》的切片 #'+idx);
+  },260);
+}
+function toggleW(i,wi){ const e=document.getElementById('we-'+i+'-'+wi); if(e) e.classList.toggle('show'); }
+
+/* ============ TRACE DRAWER ============ */
+function openTrace(key){
+  const tr=TRACES[key]; if(!tr) return;
+  document.getElementById('drawer-meta').textContent=tr.meta;
+  let h='';
+  tr.steps.forEach(s=>{
+    h+=`<div class="tstep"><div class="tdot"></div><div class="tname">${s.n}${s.lat?`<span class="lat">${s.lat}</span>`:''}</div>`;
+    if(s.b) h+=`<div class="tbody">${s.b}</div>`;
+    if(s.subs) s.subs.forEach(x=>h+=`<div class="tsub">${x}</div>`);
+    h+=`</div>`;
+  });
+  document.getElementById('drawer-body').innerHTML=h;
+  document.getElementById('drawer-mask').classList.add('show');
+  document.getElementById('drawer').classList.add('show');
+}
+function closeDrawer(){ document.getElementById('drawer-mask').classList.remove('show'); document.getElementById('drawer').classList.remove('show'); }
+
+/* ============ TEST CHAT ============ */
+function clearChat(which){
+  if(which==='doc'){ document.getElementById('doc-chat').innerHTML=`<div class="info-banner">这里只测试本知识库的命中效果（与「效果测试」的全链路不同）。输入问题开始测试。</div><div><div class="chip" onclick="docTest('如何新建供应商？')">试试：如何新建供应商？</div><div class="chip" onclick="docTest('联行号在哪补充？')">试试：联行号在哪补充？</div></div>`; }
+  else { document.getElementById('ef-chat').innerHTML=`<div class="info-banner">选好事业部 + 品牌后开始提问。结果会带 worker 标签与拼接内容；技术主管还可看完整 trace。</div><div><div class="chip" onclick="efTest('我的货到哪了？')">试试：我的货到哪了？</div><div class="chip" onclick="efTest('这次坑位费多少？')">试试：这次坑位费多少？</div></div>`; }
+}
+function bubble(box,role,text){ const c=document.getElementById(box); const d=document.createElement('div'); d.className='bubble '+(role==='u'?'b-user':'b-bot'); d.innerHTML=text; c.appendChild(d); c.scrollTop=c.scrollHeight; return d; }
+
+function docTest(text){
+  const inp=document.getElementById('doc-chat-in'); const q=text||inp.value.trim(); if(!q) return; inp.value='';
+  document.querySelectorAll('#doc-chat .info-banner, #doc-chat .chip')?.forEach&&0;
+  bubble('doc-chat','u',q);
+  setTimeout(()=>bubble('doc-chat','b','【单库检索结果】命中切片：<br>· 朋友云如何新建供应商-操作路径（rerank 0.86）<br>· 联行号补充入口（rerank 0.79）<br><br>本库可答，建议合成话术：进入「商家CRM-客商管理」按页签操作。'),400);
+}
+function efTest(text){
+  const line=document.getElementById('ef-test-line').value;
+  const brand=document.getElementById('ef-test-brand').value.trim();
+  if(!line){ toast('请先选择事业部'); return; }
+  const inp=document.getElementById('ef-chat-in'); const q=text||inp.value.trim(); if(!q) return; inp.value='';
+  if(!brand){ toast('请填写品牌（业务 worker 取数所需）'); return; }
+  bubble('ef-chat','u',q);
+  setTimeout(()=>{
+    let traceLine = S.role==='tech' ? `<div style="margin-top:8px;border-top:1px dashed #cbd5e1;padding-top:7px"><div class="trace-btn" onclick="openTrace('logistics')">⛓ 查看完整 trace</div></div>` : '';
+    let body=`<div>您的订单已发货，预计 06-10 送达。</div>
+      <div style="margin-top:8px;border-top:1px dashed #cbd5e1;padding-top:7px;font-size:12px">
+      <b>拼接内容</b>（${S.role==='tech'?'技术 + 商务可见':'商务可见'}）：<br>
+      · 物流 worker → {状态:已发货, 预计:06-10}<br>
+      · RAG·操作手册 → 切片#7「联行号补充」0.82</div>${traceLine}`;
+    bubble('ef-chat','b',body);
+  },450);
+}
+
+/* ============ NEW KB ============ */
+function openNewKB(){ document.getElementById('nk-line').value=S.line; document.getElementById('nk-name').value=''; document.getElementById('nk-desc').value=''; openMask('m-newkb'); }
+function createKB(){
+  const n=document.getElementById('nk-name').value.trim(), d=document.getElementById('nk-desc').value.trim();
+  if(!n){ toast('请填写知识库名称'); return; }
+  if(!d){ toast('路由说明为必填'); return; }
+  closeMask('m-newkb'); toast('已创建空知识库「'+n+'」，进入库后可上传文档');
+}
+
+/* ============ UPLOAD WIZARD ============ */
+function openUpload(){
+  const k=KBS[S.line].find(x=>x.id===S.kbId)||KBS[S.line][0];
+  document.getElementById('up-kbname').textContent=k.name;
+  document.getElementById('up-name').value=k.name;
+  document.getElementById('up-desc').value=k.desc;
+  S.upStep=1; renderUpStep(); openMask('m-upload');
+}
+function renderUpStep(){
+  document.querySelectorAll('#up-steps .step').forEach(s=>{ const n=+s.dataset.s; s.classList.toggle('on',n===S.upStep); s.classList.toggle('done',n<S.upStep); });
+  document.querySelectorAll('#up-steps .step-line').forEach((l,i)=>l.classList.toggle('done',i<S.upStep-1));
+  document.querySelectorAll('.up-page').forEach(p=>p.classList.toggle('hide',+p.dataset.p!==S.upStep));
+  document.getElementById('up-prev').classList.toggle('hide',S.upStep===1);
+  const nx=document.getElementById('up-next');
+  nx.textContent = S.upStep===2?'下一步 →' : S.upStep===3?'开始处理 →' : S.upStep===4?'确认（后台继续）' : '下一步 →';
+  if(S.upStep===3) renderUpSegs();
+  if(S.upStep===4) runProgress();
+}
+function renderUpSegs(){
+  const segs=[{t:'如何创建保量合同 / 操作路径：合同管理-保量合同',q:90},{t:'创建保量合同：点击【新建保量合同】，填写品牌/金额/保量指标',q:88},{t:'提交审批，审批通过后生效',q:62},{t:'保量指标说明…',q:38}];
+  document.getElementById('up-segs').innerHTML=segs.map((s,i)=>`<div style="margin-bottom:9px"><div style="font-size:11px;color:var(--ink3);margin-bottom:3px">切片 #${i+1}</div><div style="font-size:11.5px;line-height:1.6;margin-bottom:4px">${s.t}</div><span class="qbar"><span class="qfill ${qfcls(s.q)}" style="width:${s.q}%"></span></span> <span class="qual ${qcls(s.q)}" style="font-size:11px">${s.q}%</span></div>`).join('');
+}
+function upStep(dir){
+  if(S.upStep===4&&dir>0){ closeMask('m-upload'); toast('已提交后台处理，完成后即可被引用'); renderDocs&&renderDocs(); return; }
+  S.upStep=Math.max(1,Math.min(4,S.upStep+dir)); renderUpStep();
+}
+let progT=null;
+function runProgress(){
+  let p=1; const fill=document.getElementById('up-prog'), pct=document.getElementById('up-pct');
+  clearInterval(progT);
+  progT=setInterval(()=>{ p+=Math.random()*18; if(p>=100){p=100;clearInterval(progT);} fill.style.width=p+'%'; pct.textContent=Math.round(p)+'%'; },350);
+}
+function pickFile(){ const f=document.getElementById('up-file'); f.style.opacity=1; toast('已选择文件（演示）'); }
+function pickOpt(el,grp){ el.parentElement.querySelectorAll('.opt').forEach(o=>{ /* group by following siblings: simpler—toggle within same group block */ }); 
+  // toggle within nearest set: clear siblings sharing same data group via DOM order
+  let sib=el; const opts=[...el.parentElement.children].filter(c=>c.classList.contains('opt'));
+  // determine group: parse vs seg by preceding ssect — just clear contiguous opts of same block
+  // simple approach: clear all opts between the two ssect headers around el
+  const all=[...el.parentElement.children]; let start=all.indexOf(el);
+  // clear up
+  for(let i=start;i>=0;i--){ if(all[i].classList.contains('ssect'))break; if(all[i].classList.contains('opt'))all[i].classList.remove('on'); }
+  for(let i=start;i<all.length;i++){ if(all[i].classList.contains('ssect')&&i!==start)break; if(all[i].classList.contains('opt'))all[i].classList.remove('on'); }
+  el.classList.add('on');
+}
+
+/* ============ FAQ IMPORT ============ */
+function openFaqImport(){ document.getElementById('faq-imp-name').textContent=document.getElementById('faq-name').textContent; document.getElementById('faq-file').classList.add('hide'); document.getElementById('faq-check').classList.add('hide'); openMask('m-faq'); }
+function faqUploaded(){ document.getElementById('faq-file').classList.remove('hide'); document.getElementById('faq-check').classList.remove('hide'); toast('已上传，解析校验完成'); }
+function confirmFaqImport(){ closeMask('m-faq'); toast('已导入 30 条 FAQ（2 条冲突待处理已按所选处理）'); }
+
+/* ============ BOARD ============ */
+function badTab(t,el){ document.querySelectorAll('#page-board .tab').forEach(x=>x.classList.remove('on')); el.classList.add('on'); renderBad(t); }
+function renderBad(t){
+  const w=document.getElementById('bad-list'); w.innerHTML='';
+  const arr=BAD[t]||[];
+  if(!arr.length){ w.innerHTML='<div class="empty">该分类暂无案例</div>'; return; }
+  arr.forEach(b=>{ const d=document.createElement('div'); d.className='bad';
+    d.innerHTML=`<div class="bq">${b.q}<div class="bmeta">${b.m}</div></div><button class="btn sm" onclick="gotoEffectByCase('${b.fid}')">→ 效果测试查看</button>`; w.appendChild(d); });
+}
+function gotoEffectByCase(fid){
+  go('effect');
+  // reset all filters so target is visible, then jump+highlight that exact conversation
+  ['ef-time','ef-status','ef-line','ef-group','ef-worker','ef-fill'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value='all'; });
+  renderFeed(fid);
+  toast('已定位到对应会话');
+}
+/* history drawer */
+const HISTORY=[
+  {t:'今天 11:20', line:'杭综淘宝', brand:'美妆品牌A', q:'我的货到哪了？'},
+  {t:'今天 10:05', line:'杭抖', brand:'数码品牌E', q:'这次坑位费多少？'},
+  {t:'昨天 17:40', line:'杭综淘宝', brand:'母婴品牌D', q:'保量合同怎么创建？'},
+  {t:'昨天 15:12', line:'杭综抖音', brand:'服饰品牌B', q:'怎么补联行号？'},
+  {t:'06-07 14:30', line:'杭抖', brand:'家居品牌F', q:'这个月被扣分了吗？'},
+];
+function openHistory(){
+  const b=document.getElementById('hist-body');
+  b.innerHTML=HISTORY.map((h,i)=>`<div class="hist-item" onclick="loadHistory(${i})"><div class="hq">${h.q}</div><div class="hm">${h.t} · ${h.line} · ${h.brand}</div></div>`).join('');
+  document.getElementById('hist-mask').classList.add('show');
+  document.getElementById('hist-drawer').classList.add('show');
+}
+function closeHistory(){ document.getElementById('hist-mask').classList.remove('show'); document.getElementById('hist-drawer').classList.remove('show'); }
+function loadHistory(i){
+  const h=HISTORY[i]; closeHistory();
+  document.getElementById('ef-test-line').value=h.line;
+  document.getElementById('ef-test-brand').value=h.brand;
+  efTest(h.q);
+}
+function renderTrend(){
+  const data=[78,82,80,85,84,88,86], data2=[18,16,17,13,14,11,12];
+  const W=620,H=140,pad=24, max=100;
+  const pts=(arr,col)=>arr.map((v,i)=>`${pad+i*((W-2*pad)/(arr.length-1))},${H-pad-(v/max)*(H-2*pad)}`).join(' ');
+  document.getElementById('trend').innerHTML=
+    `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:640px">
+      <polyline points="${pts(data)}" fill="none" stroke="#16a34a" stroke-width="2"/>
+      <polyline points="${pts(data2)}" fill="none" stroke="#d97706" stroke-width="2"/>
+      ${data.map((v,i)=>`<circle cx="${pad+i*((W-2*pad)/(data.length-1))}" cy="${H-pad-(v/max)*(H-2*pad)}" r="3" fill="#16a34a"/>`).join('')}
+      ${data2.map((v,i)=>`<circle cx="${pad+i*((W-2*pad)/(data2.length-1))}" cy="${H-pad-(v/max)*(H-2*pad)}" r="3" fill="#d97706"/>`).join('')}
+     </svg>
+     <div style="font-size:12px;color:var(--ink3);margin-top:6px"><span style="color:#16a34a">● 命中率</span> &nbsp; <span style="color:#d97706">● 兜底率</span> &nbsp; 周一→周日</div>`;
+  renderBad('miss');
+}
+
+/* ============ UTIL ============ */
+function openMask(id){ document.getElementById(id).classList.add('show'); }
+function closeMask(id){ document.getElementById(id).classList.remove('show'); }
+let toastT=null;
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200); }
+
+/* init */
+populateGroups();
+renderKBList();
+setRole('bd');
+document.getElementById('nav-board').classList.add('hide');
+</script>
+</body>
+</html>
