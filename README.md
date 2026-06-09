@@ -1,4 +1,4 @@
-# shangwu-assistant · Merchant Assistant AI QA Platform (frontend prototype)
+# Business-Assistant · Merchant Assistant AI QA Platform
 
 > A **frontend prototype** of an AI QA bot for enterprise-WeChat customer group chats, built on an **orchestrator-workers** architecture (one orchestrator + five workers). It isn't a running system — it turns the orchestration, slot-filling, silent-intent, full trace, and quality dashboard into a **clickable UI**, so an architecture spec becomes something you can demo and argue over. **Single file, zero backend, runs offline.**
 
